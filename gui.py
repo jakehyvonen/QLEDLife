@@ -13,11 +13,10 @@ import time
 import numpy as np
 
 from emulator import *
+from pixel import *
 from threading import *
 
 EMULATOR_MODE = False
-
-is_running = False
 
 ser = serial.Serial()
 ser.baudrate = 9600
@@ -83,6 +82,14 @@ class ControlPanel(tk.Frame):
             self, text="Connect", fg="blue", command=self.connect_to_controller)
         self.connect_button.grid(row=1,column=3)
         
+        self.channel_entry = tk.Entry(
+            self, width=6)
+        self.channel_entry.grid(row=2,column=1)
+        
+        self.device_entry = tk.Entry(
+            self, width=6)
+        self.device_entry.grid(row=2,column=2)
+        
         self.start_button = tk.Button(
             self, text="Start", fg="green", command=self.start)
         self.start_button.grid(row=10,rowspan=2,columnspan=2,sticky=tk.W+tk.E)
@@ -90,6 +97,8 @@ class ControlPanel(tk.Frame):
         self.stop_button = tk.Button(
             self, text="Stop", fg="red", command=self.stop)
         self.stop_button.grid(row=10,column=2,columnspan=2,sticky=tk.W+tk.E)
+        
+        self.pixels = [[Pixel(ch,dv) for dv in range(3)] for ch in range(15)]
         
         
     def set_all_off(self):
@@ -108,22 +117,20 @@ class ControlPanel(tk.Frame):
             print("Not connected")
             
     def start(self):
-        global is_running
+        global ser
         if ser.is_open:
-            self.set_all()
-            time.sleep(1)
-            ser.write(b'start\n')
-            if not is_running:
-                is_running = True
-                timer = Timer(5.0,get_measurement,[0])
-                timer.start()
+            ch = int(self.channel_entry.get())
+            dv = ord(self.device_entry.get())-65
+            self.pixels[ch][dv].ser = ser
+            self.pixels[ch][dv].start()
         else:
             print("Not connected")
             
     def stop(self):
         if ser.is_open:
-            ser.write(b'quit\n')
-            is_running = False
+            ch = int(self.channel_entry.get())
+            dv = ord(self.device_entry.get())-65
+            self.pixels[ch][dv].stop()
         else:
             print("Not connected")
         
@@ -170,29 +177,6 @@ class PlotPanel(tk.Frame):
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        
-def get_measurement(ch):
-    global ser
-    global is_running
-    if is_running:
-        dv = 0
-        ser.write(b'getLed%02dA\n' % ch)
-        print('GUI SEND: getLed%02dA' % ch)
-        while(ser.in_waiting):
-            pass
-        vled = ser.readline()
-        store_measurement('test.csv',ch,dv,vled,0)
-        print('GUI RECV: ' + vled)
-        timer = Timer(5.0,get_measurement,[(ch+1)%16])
-        timer.start()
-    else:
-        print('not running')
-        
-def store_measurement(file,ch,dv,vled,vpd):
-    #TODO - long or wide format?
-    with open(file,'w') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow([vled])
 
     
 def emulator_init():

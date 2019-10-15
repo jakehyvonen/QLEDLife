@@ -48,12 +48,16 @@ class Emulator:
         
     def ADC_measure(self,ch):
         if (self.running):
-            self.LedMeas[ch][0] = self.DacSet[ch][0] * 0.0003052
-            self.LedMeas[ch][1] = self.DacSet[ch][1] * 0.0003052
-            self.LedMeas[ch][2] = self.DacSet[ch][2] * 0.0003052
-            self.LedMeas[ch][3] = self.DacSet[ch][3] * 0.0003052
+            # self.LedMeas[ch][0] = self.DacSet[ch][0] * 0.0003052
+            # self.LedMeas[ch][1] = self.DacSet[ch][1] * 0.0003052
+            # self.LedMeas[ch][2] = self.DacSet[ch][2] * 0.0003052
+            # self.LedMeas[ch][3] = self.DacSet[ch][3] * 0.0003052
+            self.LedMeas[ch][0] = self.LedMeas[ch][0]+(self.DacSet[ch][0] * 0.0003052)
+            self.LedMeas[ch][1] = self.LedMeas[ch][1]+(self.DacSet[ch][1] * 0.0003052)
+            self.LedMeas[ch][2] = self.LedMeas[ch][2]+(self.DacSet[ch][2] * 0.0003052)
+            self.LedMeas[ch][3] = self.LedMeas[ch][3]+(self.DacSet[ch][3] * 0.0003052)
             self.DataValid[ch] = 1;
-            print(self.LedMeas[ch])
+            #print(self.LedMeas[ch])
             timer = Timer(1.0,self.ADC_measure,[(ch+1)%16])
             timer.start()
         
