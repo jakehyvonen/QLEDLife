@@ -27,6 +27,11 @@ class Emulator:
         elif (command[:6] == 'setAll'):
             dacSetting = int(16383 * float(command[6:10]) / 10.0)
             self.DacSet = np.full((16,4),dacSetting)
+        elif (command[:6] == 'setDac'):
+            dacSetting = int(16383 * float(command[9:13]) / 10.0)
+            dv = int(command[6:8])
+            px = ord(command[8:9]) - 65
+            self.DacSet[dv][px] = dacSetting
         # elif (command[:5] == 'start'):
             # if (~self.running):
                 # self.running = True
@@ -36,11 +41,11 @@ class Emulator:
             # if (self.running):
                 # self.running = False
         elif (command[:6] == 'getLed'):
-            ch = int(command[6:8])
-            dv = ord(command[8:9]) - 65
-            if self.DataValid[ch]:
-                print('EMU SEND: %.6f' % self.LedMeas[ch][dv])
-                self.ser.write('%.6f\n' % self.LedMeas[ch][dv])
+            dv = int(command[6:8])
+            px = ord(command[8:9]) - 65
+            if self.DataValid[dv]:
+                print('EMU SEND: %.6f' % self.LedMeas[dv][px])
+                self.ser.write('%.6f\n' % self.LedMeas[dv][px])
             else:
                 self.ser.write('Data not valid')
             while(self.ser.in_waiting):

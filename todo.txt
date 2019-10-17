@@ -1,0 +1,4 @@
+1. definite race conditions exist between threads sharing serial port. need locking to prevent
+2. selectable file destination?
+3. Device parent class for updating multiple pixels at once?
+4. closing gui can leave threads hanging. find clean up function?
