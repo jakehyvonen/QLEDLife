@@ -1,4 +1,7 @@
-1. definite race conditions exist between threads sharing serial port. need locking to prevent
-2. selectable file destination?
-3. Device parent class for updating multiple pixels at once?
-4. closing gui can leave threads hanging. find clean up function?
+TODO  1 - definite race conditions exist between threads sharing serial port. need locking to prevent
+	Oct 18	-- Pixel has lock around serial usage
+		-- gui/Pixel may still compete for port?
+		-- no concern on emulator/Pixel competition
+TODO  2 - selectable file destination?
+TODO  3 - Device parent class for updating multiple pixels at once?
+DONE  4 - closing gui can leave threads hanging. find clean up function?

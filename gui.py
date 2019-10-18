@@ -20,6 +20,7 @@ from pixel import *
 from threading import *
 
 EMULATOR_MODE = False
+em_thread = None
 
 ser = serial.Serial()
 ser.baudrate = 9600
@@ -68,6 +69,9 @@ class StatusPanel(tk.Frame):
         self.connection_status_label = tk.Label(
             self,fg="red",text="Not connected")
         self.connection_status_label.grid(columnspan=4,sticky=tk.W)
+        
+        if EMULATOR_MODE:
+            self.connection_status_label.config(fg="blue",text="EMULATOR")
         
         self.off_button = tk.Button(
             self, text="OFF", command=self.set_all_off)
@@ -134,11 +138,6 @@ class StatusPanel(tk.Frame):
         if ser.is_open:
             print("Already connected.")
             return
-        elif EMULATOR_MODE:
-            ser = serial.serial_for_url('loop://')
-            em_thread = Thread(target = emulator_init)
-            em_thread.start()
-            port = 'EMULATOR'
         else:
             print('Attempting to connect...')
             result = sc.serial_ports()
@@ -201,13 +200,17 @@ class DeviceFrame(tk.Frame):
         tk.Frame.__init__(self,parent)
         
         self.pixelA = PixelFrame(self,device,0)
-        self.pixelA.grid(row=0,sticky=tk.W+tk.E)
+        self.pixelA.config(pady=5)
+        self.pixelA.grid(row=0,sticky=tk.W+tk.N)
         self.pixelB = PixelFrame(self,device,1)
-        self.pixelB.grid(row=1,sticky=tk.W+tk.E)
+        self.pixelB.config(pady=5)
+        self.pixelB.grid(row=1,sticky=tk.W+tk.N)
         self.pixelC = PixelFrame(self,device,2)
-        self.pixelC.grid(row=2,sticky=tk.W+tk.E)
+        self.pixelC.config(pady=5)
+        self.pixelC.grid(row=2,sticky=tk.W+tk.N)
         self.pixelD = PixelFrame(self,device,3)
-        self.pixelD.grid(row=3,sticky=tk.W+tk.E)
+        self.pixelD.config(pady=5)
+        self.pixelD.grid(row=3,sticky=tk.W+tk.N)
         
         self.start_button = tk.Button(
             self, text="START ALL", fg="green", command=self.start_all)
@@ -219,11 +222,8 @@ class DeviceFrame(tk.Frame):
 
     def start_all(self):
         self.pixelA.start()
-        time.sleep(1)
         self.pixelB.start()
-        time.sleep(1)
         self.pixelC.start()
-        time.sleep(1)
         self.pixelD.start()
         
     def stop_all(self):
@@ -243,9 +243,17 @@ class PixelFrame(tk.Frame):
             self,fg="red",text=(('Pixel %02d' % device) + str(chr(px+65))))
         self.pixel_label.grid(sticky=tk.W)
         
+        self.id_entry_label = tk.Label(
+            self,text='ID:')
+        self.id_entry_label.grid(row=0,column=0,sticky=tk.E)
+        
+        self.id_entry = tk.Entry(
+            self, width=6)
+        self.id_entry.grid(row=0,column=1)
+        
         self.current_entry_label = tk.Label(
-            self,text='Set current:')
-        self.current_entry_label.grid(row=1)
+            self,text='Current (mA):')
+        self.current_entry_label.grid(row=1,column=0)
         
         self.current_entry = tk.Entry(
             self, width=6)
@@ -259,26 +267,24 @@ class PixelFrame(tk.Frame):
         global ser
         self.pixel_label.configure(fg='green')
         self.pixel.ser = ser
+        self.pixel.set_id(int(self.id_entry.get()))
         self.pixel.set_current(float(self.current_entry.get()))
         self.pixel.start()
         
     def stop(self):
         self.pixel_label.configure(fg='red')
         self.pixel.stop()
-        
 
-    
-def emulator_init():
-    global ser
-    em = Emulator(ser)
-    print('GUI: Emulator exited')
-    ser = serial.Serial()
 
 if __name__ == '__main__':
     if sys.argv[1] == '-t' or sys.argv[1] == '-e':
         EMULATOR_MODE = True
+        ser = serial.serial_for_url('loop://')
+        em_thread = Emulator(ser)
+        em_thread.start()
     app = App()
     # ani = animation.FuncAnimation(f, animate, interval=1000)
     app.mainloop()
+    if EMULATOR_MODE:
+        em_thread.stop()
     app.destroy()
-        
