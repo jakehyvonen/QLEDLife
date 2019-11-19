@@ -111,7 +111,7 @@ void loop() {
     {
       String parseString = command.substring(6, 10); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
-      DAC.set_all_current(CHANNEL_ALL, currentFloat);
+      DAC.set_all_current(CHANNEL_ALL, currentFloat,1);
     }
     else if (command.substring(0, 6) == "setDev")
     {
@@ -136,6 +136,17 @@ void loop() {
         Serial.println(v_led_int);
       }
     }
+    else if (command.substring(0,4) == "read")
+    {
+      String parseString = command.substring(4, 6); // get channel as string
+      int reg = parseString.toInt();
+      byte buf[4*NUM_DEVICES];
+      DAC.read_register(reg,&buf[0]);
+      for (int i = 0; i++; i<4*NUM_DEVICES)
+      {
+        Serial.println(buf[i]);
+      }
+    }
     else if (command.substring(0, 4) == "stop")
     {
       stop_timer();
@@ -151,6 +162,18 @@ void loop() {
     else if (command.substring(0, 5) == "sweep")
     {
       sweeping ? stop_sweep() : start_sweep();
+    }
+    else if (command.substring(0, 6) == "_write")
+    {
+      DAC.test_write();
+    }
+    else if (command.substring(0, 4) == "_sdo")
+    {
+      DAC.test_enable_SDO();
+    }
+    else if (command.substring(0, 4) == "_clr")
+    {
+      DAC.test_clr();
     }
   }
 }
@@ -171,7 +194,7 @@ ISR(TIMER1_OVF_vect)
 ISR(TIMER2_OVF_vect)
 {
   TCNT2 = 0;
-  DAC.set_all_current(CHANNEL_ALL, sweepValue);
+  DAC.set_all_current(CHANNEL_ALL, sweepValue,1);
   if (sweepUp)
   {
     if (sweepValue < 10.0)
@@ -279,7 +302,7 @@ void stop_sweep()
   TCNT2 = 0;
   TCCR2B &= ~((1 << CS12) + 1);    // 1024 prescaler
   TIMSK2 &= ~(1 << TOIE1);
-  DAC.set_all_current(CHANNEL_ALL, 0);
+  DAC.set_all_current(CHANNEL_ALL, 0,1);
   interrupts();
 }
 
