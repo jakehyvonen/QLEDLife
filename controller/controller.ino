@@ -7,7 +7,7 @@
 #include "MemoryOperations.h"
 #include "defines.h"
 
-#define NUM_DEVICES 3
+#define NUM_DEVICES 4
 #define MSG_METHOD_SUCCESS 0
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
@@ -111,16 +111,18 @@ void loop() {
     {
       String parseString = command.substring(6, 10); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
-      DAC.set_all_current(CHANNEL_ALL, currentFloat,1);
+      DAC.set_all_current(CHANNEL_ALL, currentFloat);
     }
     else if (command.substring(0, 6) == "setDev")
     {
-      String parseString = command.substring(6, 8); // get the I value as a string
+      String parseString = command.substring(6, 8); // get the device number as a string
       int device = parseString.toInt();
-      parseString = command.substring(8, 12); // get the I value as a string
+      parseString = command.substring(8, 9);
+      int ch = channel_name_to_number(parseString.charAt(0));
+      parseString = command.substring(9, 13); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
-      Serial.print("Setting device ");Serial.print(device);Serial.print(" to ");Serial.println(currentFloat);
-      DAC.set_device_current(device, currentFloat);
+      //Serial.print("Setting device ");Serial.print(device);Serial.print(" to ");Serial.println(currentFloat);
+      DAC.set_device_current(device, ch, currentFloat);
     }
     else if (command.substring(0, 6) == "getLed")
     {
@@ -138,8 +140,10 @@ void loop() {
     }
     else if (command.substring(0,4) == "read")
     {
-      String parseString = command.substring(4, 6); // get channel as string
+      String parseString = command.substring(4, 6); // get device as string
       int reg = parseString.toInt();
+      parseString = command.substring(8, 9);
+      int ch = channel_name_to_number(parseString.charAt(0));
       byte buf[4*NUM_DEVICES];
       DAC.read_register(reg,&buf[0]);
       for (int i = 0; i++; i<4*NUM_DEVICES)
@@ -194,7 +198,7 @@ ISR(TIMER1_OVF_vect)
 ISR(TIMER2_OVF_vect)
 {
   TCNT2 = 0;
-  DAC.set_all_current(CHANNEL_ALL, sweepValue,1);
+  DAC.set_all_current(CHANNEL_ALL, sweepValue);
   if (sweepUp)
   {
     if (sweepValue < 10.0)
@@ -238,7 +242,7 @@ int channel_name_to_number(char channel)
   {
     return (channel - 65);
   }
-  return -1;
+  return CHANNEL_ALL;
 }
 
 int readSerialInputCommand(String *command)
@@ -302,7 +306,7 @@ void stop_sweep()
   TCNT2 = 0;
   TCCR2B &= ~((1 << CS12) + 1);    // 1024 prescaler
   TIMSK2 &= ~(1 << TOIE1);
-  DAC.set_all_current(CHANNEL_ALL, 0,1);
+  DAC.set_all_current(CHANNEL_ALL, 0);
   interrupts();
 }
 

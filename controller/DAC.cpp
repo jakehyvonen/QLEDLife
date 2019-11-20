@@ -87,7 +87,7 @@ int Dac::current_float_to_int(float f)
   return DACint;
 }
 
-void Dac::set_all_current(int channel, float f, bool upd)
+void Dac::set_all_current(int channel, float f)
 {
   int DACSetInt = current_float_to_int(f);
   
@@ -97,14 +97,14 @@ void Dac::set_all_current(int channel, float f, bool upd)
   for (int i = 0; i < NUM_DEVICES; i++)
   {
     //Serial.print(i);Serial.println("th TRANSFER:");
-    send_write_buf(CHANNEL_ALL,DACSetInt,upd);
+    send_write_buf(CHANNEL_ALL,DACSetInt,1);
   }
   
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
 }
 
-void Dac::set_device_current(int device, float f)
+void Dac::set_device_current(int device, int channel, float f)
 {
   int DACSetInt = current_float_to_int(f);
   
@@ -118,7 +118,7 @@ void Dac::set_device_current(int device, float f)
     send_nop(&buf[0]);
   }
 
-  send_write_buf(CHANNEL_ALL,DACSetInt,1);
+  send_write_buf(channel,DACSetInt,1);
 
   for (int i = 0; i < device; i++)
   {

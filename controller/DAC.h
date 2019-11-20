@@ -10,8 +10,8 @@ class Dac
     void begin();
     void enable_SDO();
     void read_register(byte reg, byte* buf);
-    void set_all_current(int channel, float f, bool upd);
-    void set_device_current(int device, float f);
+    void set_all_current(int channel, float f);
+    void set_device_current(int device, int channel, float f);
     void test_write();
     void test_enable_SDO();
     void test_clr();
