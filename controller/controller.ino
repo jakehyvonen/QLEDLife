@@ -7,7 +7,7 @@
 #include "MemoryOperations.h"
 #include "defines.h"
 
-#define NUM_DEVICES 4
+#define NUM_DEVICES 3
 #define MSG_METHOD_SUCCESS 0
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
@@ -140,16 +140,11 @@ void loop() {
     }
     else if (command.substring(0,4) == "read")
     {
-      String parseString = command.substring(4, 6); // get device as string
-      int reg = parseString.toInt();
-      parseString = command.substring(8, 9);
+      String parseString = command.substring(5, 7); // get device as int
+      int dv = parseString.toInt();
+      parseString = command.substring(7, 8);        // get channel as int
       int ch = channel_name_to_number(parseString.charAt(0));
-      byte buf[4*NUM_DEVICES];
-      DAC.read_register(reg,&buf[0]);
-      for (int i = 0; i++; i<4*NUM_DEVICES)
-      {
-        Serial.println(buf[i]);
-      }
+      int current = DAC.read_device_current(dv,ch);
     }
     else if (command.substring(0, 4) == "stop")
     {
@@ -178,6 +173,15 @@ void loop() {
     else if (command.substring(0, 4) == "_clr")
     {
       DAC.test_clr();
+    }
+    else if (command.substring(0,5) == "_read")
+    {
+      String parseString = command.substring(5, 7); // get register as string
+      int reg = parseString.toInt();
+      parseString = command.substring(7, 8);        // get channel as int
+      int ch = channel_name_to_number(parseString.charAt(0));
+      byte buf[4*NUM_DEVICES];
+      DAC.test_read_register(reg,ch,&buf[0]);
     }
   }
 }
