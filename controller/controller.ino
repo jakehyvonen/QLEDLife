@@ -7,7 +7,7 @@
 #include "MemoryOperations.h"
 #include "defines.h"
 
-#define NUM_DEVICES 3
+#define NUM_DEVICES 4
 #define MSG_METHOD_SUCCESS 0
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
@@ -140,11 +140,12 @@ void loop() {
     }
     else if (command.substring(0,4) == "read")
     {
-      String parseString = command.substring(5, 7); // get device as int
+      String parseString = command.substring(4, 6); // get device as int
       int dv = parseString.toInt();
-      parseString = command.substring(7, 8);        // get channel as int
+      parseString = command.substring(6, 7);        // get channel as int
       int ch = channel_name_to_number(parseString.charAt(0));
-      int current = DAC.read_device_current(dv,ch);
+      float current = DAC.read_device_current(dv,ch);
+      Serial.println(current);
     }
     else if (command.substring(0, 4) == "stop")
     {
