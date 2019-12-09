@@ -9,7 +9,21 @@ def SendMsgGetResponse():
     print('serialResponse:'+serialResponse)
 
 def Initialize():
-    SendMsg('++addr 16')#set GPIB address to 16 (KE2010 default)    
-    SendMsg(':CONF:CURR:DC;')#set bias 0V, autorange, no delay
-    SendMsg('G4,0,0X')#output data: measure value, ASCII, one line of data
-    SendMsg('P4X')#average 16 readings
+    SendMsg('++addr 16')#set GPIB address to 16 (KE2010 default)
+    #SendMsg('REN')#enable remote mode
+    SendMsg('*RST')#reset instrument
+    SendMsg(':CONF:CURR:DC')#set to measure DC current
+
+def MeasureCurrent():
+    SendMsg(':READ?')
+    rawReading = comm.ReadGPIBString()
+    print('rawReading: ' + rawReading)
+    
+def ParseCurrentMeasurementString(s):
+    print('hiya')
+
+print('initializing KE2010Driver')
+Initialize()
+while(True):
+    #SendMsgGetResponse()
+    MeasureCurrent()

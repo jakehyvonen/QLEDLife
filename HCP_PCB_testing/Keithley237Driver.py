@@ -1,6 +1,10 @@
 import PrologixDriver as comm
 from time import sleep
 
+#ToDo: store prologix params for each instrument in prologixDriver
+#eoi = 1 (assert EOI signal = true)
+#eos = 1 (CR)
+
 def SendMsg(message):
     return comm.SendSerialCommandAndGetResponse(message)
 
@@ -42,6 +46,6 @@ def ParseCurrentString(s):
         s=s.split(',')[0]
     return s
     
-#Initialize()
-#while(True):
-#    SendMsgGetResponse()
+Initialize()
+while(True):
+    SendMsgGetResponse()
