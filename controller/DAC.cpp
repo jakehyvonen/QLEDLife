@@ -3,6 +3,7 @@
 #include "DAC.h"
 #include "defines.h"
 #include "dac70004.h"
+#include "MemoryOperations.h"
 
 Dac::Dac(int maxCode, float maxCurrent, int nDevice, int syncPin) : MAX_DAC_CODE(maxCode), MAX_CURRENT(maxCurrent), NUM_DEVICES(nDevice), SYNC_PIN(syncPin){};
 
@@ -111,7 +112,12 @@ void Dac::set_device_current(int device, int channel, float f)
   Serial.print("channel: ");Serial.println(channel);
   Serial.print("setting: ");Serial.println(f);
   int DACSetInt = current_float_to_int(f);
-  
+
+  store_dac_int(device,channel,DACSetInt);
+
+  update_all_current(channel);
+
+  /*
   digitalWrite(SYNC_PIN,LOW);
   //delay(10);
   SPI.beginTransaction(this->settingsA);
@@ -132,6 +138,7 @@ void Dac::set_device_current(int device, int channel, float f)
   //delay(10); //arbitrary delay to ensure data transfer is not interrupted
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
+  */
 }
 
 float Dac::read_device_current(int device, int channel)
@@ -202,6 +209,39 @@ float Dac::read_device_current(int device, int channel)
   float currentFloat = ((float)currentInt / (float)MAX_DAC_CODE) * MAX_CURRENT;
 
   return currentFloat;
+}
+
+void Dac::update_all_current(int ch)
+{
+  byte cmdBytes[4];
+  uint16_t dacInt = 0;
+  cmdBytes[0] = DAC_WRITE_BUF_UPDATE_ALL_CMD;
+
+  digitalWrite(SYNC_PIN,LOW);
+  //delay(10);
+  SPI.beginTransaction(this->settingsA);
+  
+  for (int dv = NUM_DEVICES-1; dv >= 0; dv--)
+  {
+    dacInt = get_dac_int(dv,ch);
+    //Serial.println(dacInt);
+    cmdBytes[1] = (ch << 4) | (dacInt >> 10);
+    cmdBytes[2] = (dacInt >> 2) & 0xFF;
+    cmdBytes[3] = (dacInt & 0xFF) << 6;
+
+    SPI.transfer(cmdBytes[0]);
+    Serial.println(cmdBytes[0],BIN);
+    SPI.transfer(cmdBytes[1]);
+    Serial.println(cmdBytes[1],BIN);
+    SPI.transfer(cmdBytes[2]);
+    Serial.println(cmdBytes[2],BIN);
+    SPI.transfer(cmdBytes[3]);
+    Serial.println(cmdBytes[3],BIN);
+  }
+    
+  //delay(10); //arbitrary delay to ensure data transfer is not interrupted
+  digitalWrite(SYNC_PIN,HIGH); 
+  SPI.endTransaction();
 }
 
 

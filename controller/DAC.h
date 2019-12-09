@@ -11,6 +11,7 @@ class Dac
     void enable_SDO();
     void set_all_current(int channel, float f);
     void set_device_current(int device, int channel, float f);
+    void update_all_current(int ch);
     float read_device_current(int device, int channel);
     void test_write();
     void test_enable_SDO();

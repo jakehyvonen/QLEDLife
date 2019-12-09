@@ -51,6 +51,14 @@ void setup() {
 
   //Serial.println("ready");
 
+  for (int dv = 0; dv < NUM_DEVICES; dv++)
+  {
+    store_dac_int(dv,CHANNEL_A,0);
+    store_dac_int(dv,CHANNEL_B,0);
+    store_dac_int(dv,CHANNEL_C,0);
+    store_dac_int(dv,CHANNEL_D,0);
+  }
+
   interrupts();
 }
 
@@ -63,15 +71,19 @@ void loop() {
     int result;
 
     devSel = (devSel + 1) % NUM_DEVICES;
-    clear_data_valid(devSel);
+    //clear_data_valid(devSel);
     MUX16CH.switch_channel(devSel);
+    Serial.print("Device: ");Serial.println(devSel);
     for (chSel = 0; chSel < 4; chSel++)
     {
-      MUX4CH.switch_channel(devSel);
+      MUX4CH.switch_channel(chSel);
+      Serial.print("Channel: ");Serial.print(channel_number_to_name(chSel));
       delay(5);
       result = ADS1115.readADC_SingleEnded(0);    // read LED voltage
+      Serial.print(" LEDV: ");Serial.print(result);
       store_led_meas(devSel, chSel, result);
       result = ADS1115.readADC_SingleEnded(1);    // read PD voltage
+      Serial.print(" PDV: ");Serial.println(result);
       store_pd_meas(devSel, chSel, result);
       /*VdevFloat = VdevBit * VdevADCGainCF;
         Serial.print(String(get_device_id(chSel)));
@@ -88,7 +100,7 @@ void loop() {
         Serial.println(String(IphBit));
         Serial.println(IphFloat);*/
     }
-    set_data_valid(devSel);
+    //set_data_valid(devSel);
   }
 
   //Serial Input Section -- handles commands received from software
@@ -101,11 +113,18 @@ void loop() {
     if (command.substring(0, 5) == "setID")
     {
       String parseString = command.substring(5, 7); // get the channel number as a string
-      int channelInt = parseString.toInt();        // then convert it to an int
+      int device = parseString.toInt();        // then convert it to an int
       parseString = command;
       parseString.remove(0, 7);
-      uint16_t DBIDInt = parseString.toInt();
-      set_device_id(channelInt, DBIDInt);
+      uint16_t id = parseString.toInt();
+      set_device_id(device, id);
+    }
+    else if (command.substring(0, 5) == "getID")
+    {
+      String parseString = command.substring(5, 7); // get the channel number as a string
+      int device = parseString.toInt();        // then convert it to an int
+      uint16_t id = get_device_id(device);
+      Serial.println(id);
     }
     else if (command.substring(0, 6) == "setAll")
     {
@@ -127,16 +146,30 @@ void loop() {
     else if (command.substring(0, 6) == "getLed")
     {
       String parseString = command.substring(6, 8); // get channel as string
-      int dev = parseString.toInt();
+      int dv = parseString.toInt();
       parseString = command.substring(8, 9);
       int ch = channel_name_to_number(parseString.charAt(0));
-      if (is_data_valid(dev))
-      {
-        int v_led_int = get_led_meas(ch, dev);
-        Serial.println(ch);
-        Serial.println(dev);
-        Serial.println(v_led_int);
-      }
+      //if (is_data_valid(dev))
+      //{
+      uint16_t v_led_int = get_led_meas(dv, ch);
+      Serial.println(dv);
+      Serial.println(channel_number_to_name(ch));
+      Serial.println(v_led_int);
+      //}
+    }
+    else if (command.substring(0, 5) == "getPd")
+    {
+      String parseString = command.substring(5, 7); // get channel as string
+      int dv = parseString.toInt();
+      parseString = command.substring(7, 8);
+      int ch = channel_name_to_number(parseString.charAt(0));
+      //if (is_data_valid(dev))
+      //{
+      uint16_t v_pd_int = get_pd_meas(dv, ch);
+      Serial.println(dv);
+      Serial.println(channel_number_to_name(ch));
+      Serial.println(v_pd_int);
+      //}
     }
     else if (command.substring(0,4) == "read")
     {
