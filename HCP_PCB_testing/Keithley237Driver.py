@@ -15,25 +15,32 @@ def SendMsgGetResponse():
     #readResponse = comm.ReadGPIBMessage()
     #print('readResponse:'+readResponse)
 
-def Initialize():
+def GPIBActivate():
     SendMsg('++addr 15')#set GPIB address to 15     
+
+def Initialize():
+    GPIBActivate()
     #SendMsg('F0,0X')#(THIS CAUSES HANGUP)set source: voltage, measure: current
     SendMsg('B0.0,0,0X')#set bias 0V, autorange, no delay
     SendMsg('G4,0,0X')#output data: measure value, ASCII, one line of data
     SendMsg('P4X')#average 16 readings
 
 def TurnOutputOn():
+    GPIBActivate()
     SendMsg('N1X')
 
 def TurnOutputOff():
+    GPIBActivate()
     SendMsg('N0X')
     SetVoltage(0.0)
 
 def SetVoltage(voltage):
+    GPIBActivate()
     val = str(voltage)
     SendMsg('B'+val+',0,0X')
 
 def MeasureCurrent():
+    GPIBActivate()
     response = comm.ReadGPIBMessage()
     return ParseCurrentString(response)
 
@@ -46,6 +53,7 @@ def ParseCurrentString(s):
         s=s.split(',')[0]
     return s
     
+print('initializing KE237Driver')
 Initialize()
-while(True):
-    SendMsgGetResponse()
+#while(True):
+#    SendMsgGetResponse()
