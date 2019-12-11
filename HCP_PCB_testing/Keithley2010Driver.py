@@ -12,6 +12,11 @@ def SendMsgGetResponse():
 def GPIBActivate():
     SendMsg('++addr 16')#set GPIB address to 15     
 
+def GPIBReset():
+    GPIBActivate()
+    SendMsg('*RST')
+    SendMsg(':LOC')
+
 def Initialize():
     GPIBActivate()
     SendMsg('*RST')#reset instrument

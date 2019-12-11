@@ -10,7 +10,7 @@ class IVSweepSpec:
         self.stopV = stopV
 
 
-defaultSpec = IVSweepSpec(dec('0.1'),dec('0.1'),dec('5.00'))
+defaultSpec = IVSweepSpec(dec('0.1'),dec('0.5'),dec('5.00'))
 def RunIVSweep(sweepSpec):
     KE2010.Initialize()
     KE237.Initialize()
@@ -24,5 +24,6 @@ def RunIVSweep(sweepSpec):
         print('presentI: ' + str(presentI))
         presentV = presentV + sweepSpec.stepV
     KE237.TurnOutputOff()
+    KE2010.GPIBReset()
 
 RunIVSweep(defaultSpec)
