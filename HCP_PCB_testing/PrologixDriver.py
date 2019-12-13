@@ -24,6 +24,8 @@ def ReadGPIBMessage():
 def GetRawInput():
     var = input('enter command:').strip(' ')
     print(SendSerialCommandAndGetResponse(var))
-#SendSerialCommand('++auto 0')#ensure driver is in Controller mode
-#while(True):
-#    GetRawInput()
+# =============================================================================
+# SendSerialCommand('++auto 0')#ensure driver is in Controller mode
+# while(True):
+#     GetRawInput()
+# =============================================================================

@@ -15,7 +15,7 @@ def GPIBActivate():
 def GPIBReset():
     GPIBActivate()
     SendMsg('*RST')
-    SendMsg(':LOC')
+    #SendMsg('*GTL')
 
 def Initialize():
     GPIBActivate()
@@ -27,13 +27,12 @@ def MeasureCurrent():
     SendMsg(':READ?')
     rawReading = comm.ReadGPIBMessage()
     print('rawReading: ' + rawReading)
-    return dec(rawReading)
-    
-def ParseCurrentMeasurementString(s):
-    print('hiya')
+    return dec(rawReading)  
 
 print('initializing KE2010Driver')
 Initialize()
-""" while(True):
-    #SendMsgGetResponse()
-    MeasureCurrent() """
+# =============================================================================
+# while(True):
+#     SendMsgGetResponse()
+#     #MeasureCurrent()
+# =============================================================================
