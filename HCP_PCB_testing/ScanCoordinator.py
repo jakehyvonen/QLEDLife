@@ -1,8 +1,6 @@
 import Keithley237Driver as KE237
 import Keithley2010Driver as KE2010
-import csv
-import os
-from pathlib import Path
+import DataProcessor as dp
 from decimal import Decimal as dec
 
 
@@ -13,10 +11,7 @@ class IVSweepSpec:
         self.stopV = stopV
 
 
-defaultSpec = IVSweepSpec(dec('0.1'),dec('0.1'),dec('5.01'))
-defaultDir = os.path.expanduser('~/Documents/Lifetime_System/')
-defaultName = 'Default.csv'
-defaultPath = defaultDir + defaultName
+defaultSpec = IVSweepSpec(dec('0.1'),dec('1.1'),dec('5.01'))
 def RunIVSweep(sweepSpec):
     KE2010.Initialize()
     KE237.Initialize()
@@ -33,13 +28,6 @@ def RunIVSweep(sweepSpec):
         presentV = presentV + sweepSpec.stepV
     KE237.TurnOutputOff()
     KE2010.GPIBReset()
-    if not Path(defaultDir).exists():
-        os.makedirs(defaultDir)
-    with open(defaultPath,'w') as csvfile:
-        ivwriter = csv.writer(csvfile, delimiter =',',
-                              quotechar='|',quoting=csv.QUOTE_MINIMAL)
-        for item in VIList:
-            ivwriter.writerow([item[0],item[1]])
-            print('V: '+str(item[0])+' I: '+str(item[1]))
+    dp.SaveListToCsv(VIList)
 
 RunIVSweep(defaultSpec)
