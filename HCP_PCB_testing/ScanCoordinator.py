@@ -11,7 +11,9 @@ class IVSweepSpec:
         self.stopV = stopV
 
 
-defaultSpec = IVSweepSpec(dec('0.1'),dec('1.1'),dec('5.01'))
+defaultSpec = IVSweepSpec(dec('0.1'),dec('0.77'),dec('5.01'))
+HCPNumber = '001'
+HCPName = 'HCP'+str(HCPNumber)
 def RunIVSweep(sweepSpec):
     KE2010.Initialize()
     KE237.Initialize()
@@ -28,6 +30,7 @@ def RunIVSweep(sweepSpec):
         presentV = presentV + sweepSpec.stepV
     KE237.TurnOutputOff()
     KE2010.GPIBReset()
-    dp.SaveListToCsv(VIList)
+    dp.SaveListToCsv(VIList, name=HCPName)
+    dp.FitLineFromCsv(name = HCPName)
 
 RunIVSweep(defaultSpec)
