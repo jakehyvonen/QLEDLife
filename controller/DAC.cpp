@@ -3,6 +3,7 @@
 #include "DAC.h"
 #include "defines.h"
 #include "dac70004.h"
+#include "MemoryOperations.h"
 
 Dac::Dac(int maxCode, float maxCurrent, int nDevice, int syncPin) : MAX_DAC_CODE(maxCode), MAX_CURRENT(maxCurrent), NUM_DEVICES(nDevice), SYNC_PIN(syncPin){};
 
@@ -56,7 +57,7 @@ void Dac::enable_SDO()
   cmdBytes[2] = 0;
   cmdBytes[3] = DAC_SDO_EN;
   
-  for (int i = 1; i < NUM_DEVICES; i++)
+  for (int i = 0; i < NUM_DEVICES; i++)
   {
     digitalWrite(SYNC_PIN,LOW); 
     delay(10);
@@ -77,17 +78,18 @@ void Dac::enable_SDO()
 
 int Dac::current_float_to_int(float f)
 {
-  int DACint = 0;
   float currentVal = f * MAX_DAC_CODE / MAX_CURRENT;
-  //Serial.print("currentVal is: ");
-  //Serial.println(currentVal);
-  DACint = (int)round(currentVal);
-  //Serial.print("DACint is: ");
-  //Serial.println(DACint);
+  int DACint = (int)round(currentVal);
   return DACint;
 }
 
-void Dac::set_all_current(int channel, float f, bool upd)
+float Dac::current_int_to_float(int i)
+{
+  float currentFloat = ((float)i / (float)MAX_DAC_CODE) * MAX_CURRENT;
+  return currentFloat;
+}
+
+void Dac::set_all_current(int channel, float f)
 {
   int DACSetInt = current_float_to_int(f);
   
@@ -97,19 +99,27 @@ void Dac::set_all_current(int channel, float f, bool upd)
   for (int i = 0; i < NUM_DEVICES; i++)
   {
     //Serial.print(i);Serial.println("th TRANSFER:");
-    send_write_buf(CHANNEL_ALL,DACSetInt,upd);
+    send_write_buf(CHANNEL_ALL,DACSetInt,1);
   }
   
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
 }
 
-void Dac::set_device_current(int device, float f)
+void Dac::set_device_current(int device, int channel, float f)
 {
+  Serial.print("device: ");Serial.println(device);
+  Serial.print("channel: ");Serial.println(channel);
+  Serial.print("setting: ");Serial.println(f);
   int DACSetInt = current_float_to_int(f);
-  
+
+  store_dac_int(device,channel,DACSetInt);
+
+  update_all_current(channel);
+
+  /*
   digitalWrite(SYNC_PIN,LOW);
-  delay(10);
+  //delay(10);
   SPI.beginTransaction(this->settingsA);
   
   byte buf[4];
@@ -118,7 +128,74 @@ void Dac::set_device_current(int device, float f)
     send_nop(&buf[0]);
   }
 
-  send_write_buf(CHANNEL_ALL,DACSetInt,1);
+  send_write_buf(channel,DACSetInt,1);
+
+  for (int i = 0; i < device; i++)
+  {
+    send_nop(&buf[0]);
+  }
+  
+  //delay(10); //arbitrary delay to ensure data transfer is not interrupted
+  digitalWrite(SYNC_PIN,HIGH); 
+  SPI.endTransaction();
+  */
+}
+
+float Dac::read_device_current(int device, int channel)
+{
+  byte buf[4];
+  
+  byte cmdBytes[4];
+  cmdBytes[0] = DAC_READ + DAC_WRITE_BUF_CMD;
+  cmdBytes[1] = (channel << 4) & 0xFF;
+  cmdBytes[2] = B00000000;
+  cmdBytes[3] = B00000000;
+
+  /*
+  Serial.println(cmdBytes[0],BIN);
+  Serial.println(cmdBytes[1],BIN);
+  Serial.println(cmdBytes[2],BIN);
+  Serial.println(cmdBytes[3],BIN);
+  */
+
+  digitalWrite(SYNC_PIN,LOW);
+  delay(10);
+  SPI.beginTransaction(this->settingsA);
+
+  for (int i = device; i < NUM_DEVICES-1; i++)
+  {
+    send_nop(&buf[0]);
+  }
+
+  SPI.transfer(cmdBytes[0]);
+  SPI.transfer(cmdBytes[1]);
+  SPI.transfer(cmdBytes[2]);
+  SPI.transfer(cmdBytes[3]);
+  
+  for (int i = 0; i < device; i++)
+  {
+    send_nop(&buf[0]);
+  }
+  
+  delay(10); //arbitrary delay to ensure data transfer is not interrupted
+  digitalWrite(SYNC_PIN,HIGH);
+  SPI.endTransaction();
+
+  delay(20);
+
+  digitalWrite(SYNC_PIN,LOW);
+  delay(10);
+  SPI.beginTransaction(this->settingsA);
+  
+
+  for (int i = device; i < NUM_DEVICES; i++)
+  {
+    send_nop(&buf[0]);
+  }
+
+  unsigned int currentInt = buf[1] & 0x0F;
+  currentInt = (currentInt << 8) + buf[2];
+  currentInt = (currentInt << 2) + (buf[3] >> 6);
 
   for (int i = 0; i < device; i++)
   {
@@ -128,43 +205,45 @@ void Dac::set_device_current(int device, float f)
   delay(10); //arbitrary delay to ensure data transfer is not interrupted
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
+
+  float currentFloat = ((float)currentInt / (float)MAX_DAC_CODE) * MAX_CURRENT;
+
+  return currentFloat;
 }
 
-void Dac::read_register(byte reg, byte* buf)
+void Dac::update_all_current(int ch)
 {
   byte cmdBytes[4];
-  cmdBytes[0] = DAC_READ + reg;
-  cmdBytes[1] = DAC_CHANNEL_ALL;
-  cmdBytes[2] = B00000000;
-  cmdBytes[3] = B00000000;
+  uint16_t dacInt = 0;
+  cmdBytes[0] = DAC_WRITE_BUF_UPDATE_ALL_CMD;
 
   digitalWrite(SYNC_PIN,LOW);
+  //delay(10);
   SPI.beginTransaction(this->settingsA);
-
-  for (int i = 0; i < NUM_DEVICES; i++)
+  
+  for (int dv = NUM_DEVICES-1; dv >= 0; dv--)
   {
+    dacInt = get_dac_int(dv,ch);
+    //Serial.println(dacInt);
+    cmdBytes[1] = (ch << 4) | (dacInt >> 10);
+    cmdBytes[2] = (dacInt >> 2) & 0xFF;
+    cmdBytes[3] = (dacInt & 0xFF) << 6;
+
     SPI.transfer(cmdBytes[0]);
+    Serial.println(cmdBytes[0],BIN);
     SPI.transfer(cmdBytes[1]);
+    Serial.println(cmdBytes[1],BIN);
     SPI.transfer(cmdBytes[2]);
+    Serial.println(cmdBytes[2],BIN);
     SPI.transfer(cmdBytes[3]);
+    Serial.println(cmdBytes[3],BIN);
   }
-  
-  digitalWrite(SYNC_PIN,HIGH); 
-  SPI.endTransaction();
-
-  delay(20);
-
-  digitalWrite(SYNC_PIN,LOW);
-  SPI.beginTransaction(this->settingsA);
-
-  for (int i = 0; i < NUM_DEVICES; i++)
-  {
-    send_nop(buf);
-  }
-  
+    
+  //delay(10); //arbitrary delay to ensure data transfer is not interrupted
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
 }
+
 
 /* ######################################################
 *                         TEST fn
@@ -252,6 +331,51 @@ void Dac::test_clr()
   SPI.transfer(commandByte2);
   SPI.transfer(commandByte1);
   SPI.transfer(commandByte0);
+  delay(10); //arbitrary delay to ensure data transfer is not interrupted
+  digitalWrite(SYNC_PIN,HIGH); 
+  SPI.endTransaction();
+}
+
+void Dac::test_read_register(byte reg, int ch, byte* buf)
+{
+  byte cmdBytes[4];
+  cmdBytes[0] = DAC_READ + reg;
+  cmdBytes[1] = (ch << 4) & 0xFF;
+  cmdBytes[2] = B00000000;
+  cmdBytes[3] = B00000000;
+
+  digitalWrite(SYNC_PIN,LOW);
+  delay(10);
+  SPI.beginTransaction(this->settingsA);
+
+  for (int i = 0; i < NUM_DEVICES; i++)
+  {
+    SPI.transfer(cmdBytes[0]);
+    SPI.transfer(cmdBytes[1]);
+    SPI.transfer(cmdBytes[2]);
+    SPI.transfer(cmdBytes[3]);
+  }
+  
+  delay(10); //arbitrary delay to ensure data transfer is not interrupted
+  digitalWrite(SYNC_PIN,HIGH); 
+  SPI.endTransaction();
+
+  delay(20);
+
+  digitalWrite(SYNC_PIN,LOW);
+  delay(10);
+  SPI.beginTransaction(this->settingsA);
+
+  for (int i = 0; i < NUM_DEVICES; i++)
+  {
+    Serial.print(i);Serial.println("th NOP");
+    send_nop(&buf[i*4]);
+    Serial.println(buf[(i<<2)],BIN);
+    Serial.println(buf[(i<<2)+1],BIN);
+    Serial.println(buf[(i<<2)+2],BIN);
+    Serial.println(buf[(i<<2)+3],BIN);
+  }
+  
   delay(10); //arbitrary delay to ensure data transfer is not interrupted
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();

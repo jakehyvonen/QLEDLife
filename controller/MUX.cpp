@@ -61,7 +61,7 @@ void Mux::switch_channel(int channel)
     //Serial.println(channel);
   
     //loop through the 4 sig
-    for (int j = 0; j < nPins; j ++)
+    for (int j = 0; j < nPins; j++)
     {
       digitalWrite(controlPin[j], muxChannel[channel][j]);
       //Serial.print(muxChannel[channel][j]);
