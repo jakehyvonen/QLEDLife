@@ -7,7 +7,7 @@
 #include "MemoryOperations.h"
 #include "defines.h"
 
-#define NUM_DEVICES 4
+#define NUM_DEVICES 2
 #define MSG_METHOD_SUCCESS 0
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
@@ -58,6 +58,8 @@ void setup() {
     store_dac_int(dv,CHANNEL_C,0);
     store_dac_int(dv,CHANNEL_D,0);
   }
+
+  DAC.set_all_current(0);
 
   interrupts();
 }
@@ -130,7 +132,7 @@ void loop() {
     {
       String parseString = command.substring(6, 10); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
-      DAC.set_all_current(CHANNEL_ALL, currentFloat);
+      DAC.set_all_current(currentFloat);
     }
     else if (command.substring(0, 6) == "setDev")
     {
@@ -217,6 +219,17 @@ void loop() {
       byte buf[4*NUM_DEVICES];
       DAC.test_read_register(reg,ch,&buf[0]);
     }
+    else if (command.substring(0,8) == "_MEM_DAC")
+    {
+      for (int dv = 0; dv<NUM_DEVICES; dv++)
+      {
+        for (int ch = 0; ch<4; ch++)
+        {
+          Serial.print(get_dac_int(dv,ch));Serial.print(" ");
+        }
+      }
+      Serial.print("\n");
+    }
   }
 }
 
@@ -236,7 +249,7 @@ ISR(TIMER1_OVF_vect)
 ISR(TIMER2_OVF_vect)
 {
   TCNT2 = 0;
-  DAC.set_all_current(CHANNEL_ALL, sweepValue);
+  DAC.set_all_current(sweepValue);
   if (sweepUp)
   {
     if (sweepValue < 10.0)
@@ -344,9 +357,6 @@ void stop_sweep()
   TCNT2 = 0;
   TCCR2B &= ~((1 << CS12) + 1);    // 1024 prescaler
   TIMSK2 &= ~(1 << TOIE1);
-  DAC.set_all_current(CHANNEL_ALL, 0);
+  DAC.set_all_current(0);
   interrupts();
 }
-
-
-

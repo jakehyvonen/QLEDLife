@@ -60,7 +60,7 @@ void Dac::enable_SDO()
   for (int i = 0; i < NUM_DEVICES; i++)
   {
     digitalWrite(SYNC_PIN,LOW); 
-    delay(10);
+    delay(1);
     SPI.beginTransaction(this->settingsA);
     
     SPI.transfer(cmdBytes[0]);
@@ -68,11 +68,11 @@ void Dac::enable_SDO()
     SPI.transfer(cmdBytes[2]);
     SPI.transfer(cmdBytes[3]);
     
-    delay(10); //arbitrary delay to ensure data transfer is not interrupted
+    delay(1); //arbitrary delay to ensure data transfer is not interrupted
     digitalWrite(SYNC_PIN,HIGH); 
     SPI.endTransaction();
     
-    delay(10);
+    delay(1);
   }
 }
 
@@ -89,7 +89,7 @@ float Dac::current_int_to_float(int i)
   return currentFloat;
 }
 
-void Dac::set_all_current(int channel, float f)
+void Dac::set_all_current(float f)
 {
   int DACSetInt = current_float_to_int(f);
   
@@ -108,6 +108,10 @@ void Dac::set_all_current(int channel, float f)
 
 void Dac::set_device_current(int device, int channel, float f)
 {
+  if (channel < 0 || channel > 3)
+  {
+    return;
+  }
   Serial.print("device: ");Serial.println(device);
   Serial.print("channel: ");Serial.println(channel);
   Serial.print("setting: ");Serial.println(f);
@@ -116,29 +120,6 @@ void Dac::set_device_current(int device, int channel, float f)
   store_dac_int(device,channel,DACSetInt);
 
   update_all_current(channel);
-
-  /*
-  digitalWrite(SYNC_PIN,LOW);
-  //delay(10);
-  SPI.beginTransaction(this->settingsA);
-  
-  byte buf[4];
-  for (int i = device; i < NUM_DEVICES-1; i++)
-  {
-    send_nop(&buf[0]);
-  }
-
-  send_write_buf(channel,DACSetInt,1);
-
-  for (int i = 0; i < device; i++)
-  {
-    send_nop(&buf[0]);
-  }
-  
-  //delay(10); //arbitrary delay to ensure data transfer is not interrupted
-  digitalWrite(SYNC_PIN,HIGH); 
-  SPI.endTransaction();
-  */
 }
 
 float Dac::read_device_current(int device, int channel)
@@ -230,13 +211,13 @@ void Dac::update_all_current(int ch)
     cmdBytes[3] = (dacInt & 0xFF) << 6;
 
     SPI.transfer(cmdBytes[0]);
-    Serial.println(cmdBytes[0],BIN);
+    //Serial.println(cmdBytes[0],BIN);
     SPI.transfer(cmdBytes[1]);
-    Serial.println(cmdBytes[1],BIN);
+    //Serial.println(cmdBytes[1],BIN);
     SPI.transfer(cmdBytes[2]);
-    Serial.println(cmdBytes[2],BIN);
+    //Serial.println(cmdBytes[2],BIN);
     SPI.transfer(cmdBytes[3]);
-    Serial.println(cmdBytes[3],BIN);
+    //Serial.println(cmdBytes[3],BIN);
   }
     
   //delay(10); //arbitrary delay to ensure data transfer is not interrupted
@@ -380,4 +361,3 @@ void Dac::test_read_register(byte reg, int ch, byte* buf)
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
 }
-

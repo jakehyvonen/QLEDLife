@@ -17,6 +17,7 @@ uint16_t get_device_id(int dv)
   int a = 0x100 + ((dv << 4) & 0xF0);
   uint16_t id = EEPROM[a];
   id |= (EEPROM[a+1] << 8);
+  return id;
 }
 
 void set_device_id(int dv, uint16_t id)

@@ -9,7 +9,7 @@ class Dac
     Dac(int maxCode, float maxCurrent, int numDev, int syncPin);
     void begin();
     void enable_SDO();
-    void set_all_current(int channel, float f);
+    void set_all_current(float f);
     void set_device_current(int device, int channel, float f);
     void update_all_current(int ch);
     float read_device_current(int device, int channel);
