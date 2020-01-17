@@ -9,6 +9,8 @@
 
 #define NUM_DEVICES 2
 #define MSG_METHOD_SUCCESS 0
+#define MAX_DAC_CODE MAX14BIT
+#define MAX_CURRENT MAX10MA
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
 const int MUX4CHSELS[] = {DPIN6, DPIN7};
@@ -16,7 +18,7 @@ const int MUX4CHSELS[] = {DPIN6, DPIN7};
 Adafruit_ADS1115 ADS1115(0x48);
 Mux MUX16CH(16, &MUX16CHSELS[0]);
 Mux MUX4CH(4, MUX4CHSELS);
-Dac DAC(MAX14BIT, MAX10MA, NUM_DEVICES, DPIN8);
+Dac DAC(MAX_DAC_CODE, MAX_CURRENT, NUM_DEVICES, DPIN8);
 
 float VdevADCGainCF = (0.0001875) * (27.0 / 12.0); //arduino ADC (10 bit)*(120+150kohm)/(120 kohm)
 //float IphADCGainCF = 0.0001875 / 120000.0; //units are Amps
@@ -49,17 +51,9 @@ void setup() {
   ADS1115.setGain(GAIN_TWOTHIRDS);
   ADS1115.begin();
 
-  //Serial.println("ready");
-
-  for (int dv = 0; dv < NUM_DEVICES; dv++)
-  {
-    store_dac_int(dv,CHANNEL_A,0);
-    store_dac_int(dv,CHANNEL_B,0);
-    store_dac_int(dv,CHANNEL_C,0);
-    store_dac_int(dv,CHANNEL_D,0);
-  }
-
   DAC.set_all_current(0);
+
+  start_timer();
 
   interrupts();
 }
@@ -73,19 +67,18 @@ void loop() {
     int result;
 
     devSel = (devSel + 1) % NUM_DEVICES;
-    //clear_data_valid(devSel);
     MUX16CH.switch_channel(devSel);
-    Serial.print("Device: ");Serial.println(devSel);
+    //Serial.print("Device: ");Serial.println(devSel);
     for (chSel = 0; chSel < 4; chSel++)
     {
       MUX4CH.switch_channel(chSel);
-      Serial.print("Channel: ");Serial.print(channel_number_to_name(chSel));
-      delay(5);
+      //Serial.print("Channel: ");Serial.print(channel_number_to_name(chSel));
+      //delay(5);
       result = ADS1115.readADC_SingleEnded(0);    // read LED voltage
-      Serial.print(" LEDV: ");Serial.print(result);
+      //Serial.print(" LEDV: ");Serial.print(result);
       store_led_meas(devSel, chSel, result);
       result = ADS1115.readADC_SingleEnded(1);    // read PD voltage
-      Serial.print(" PDV: ");Serial.println(result);
+      //Serial.print(" PDV: ");Serial.println(result);
       store_pd_meas(devSel, chSel, result);
       /*VdevFloat = VdevBit * VdevADCGainCF;
         Serial.print(String(get_device_id(chSel)));
@@ -102,7 +95,6 @@ void loop() {
         Serial.println(String(IphBit));
         Serial.println(IphFloat);*/
     }
-    //set_data_valid(devSel);
   }
 
   //Serial Input Section -- handles commands received from software
@@ -143,7 +135,7 @@ void loop() {
       parseString = command.substring(9, 13); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
       //Serial.print("Setting device ");Serial.print(device);Serial.print(" to ");Serial.println(currentFloat);
-      DAC.set_device_current(device, ch, currentFloat);
+      DAC.set_current(device, ch, currentFloat);
     }
     else if (command.substring(0, 6) == "getLed")
     {
