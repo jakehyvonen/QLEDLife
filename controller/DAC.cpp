@@ -21,18 +21,31 @@ void Dac::begin()
   this->enable_SDO();
 };
 
-void Dac::send_write_buf(unsigned int address, unsigned int value, bool upd)
+void Dac::transmit(byte *tx_buf, byte *rx_buf, int len)
 {
-  byte cmdBytes[4];
-  cmdBytes[0] = (upd ? DAC_WRITE_BUF_UPDATE_ALL_CMD : DAC_WRITE_BUF_CMD);
-  cmdBytes[1] = (address << 4) | (value >> 10);
-  cmdBytes[2] = (value >> 2) & 0xFF;
-  cmdBytes[3] = (value & 0xFF) << 6;
-  
-  SPI.transfer(cmdBytes[0]);
-  SPI.transfer(cmdBytes[1]);
-  SPI.transfer(cmdBytes[2]);
-  SPI.transfer(cmdBytes[3]);
+  digitalWrite(SYNC_PIN,LOW);
+  SPI.beginTransaction(this->settingsA);
+
+  for (int i = 0; i < len; ++i)
+  {
+    rx_buf[i] = SPI.transfer(tx_buf[i]);
+  }
+
+  digitalWrite(SYNC_PIN,HIGH); 
+  SPI.endTransaction();
+}
+
+int Dac::current_float_to_int(float f)
+{
+  float currentVal = f * MAX_DAC_CODE / MAX_CURRENT;
+  int DACint = (int)round(currentVal);
+  return DACint;
+}
+
+float Dac::current_int_to_float(int i)
+{
+  float currentFloat = ((float)i / (float)MAX_DAC_CODE) * MAX_CURRENT;
+  return currentFloat;
 }
 
 void Dac::send_nop(byte* buf)
@@ -51,75 +64,76 @@ void Dac::send_nop(byte* buf)
 
 void Dac::enable_SDO()
 {
-  byte cmdBytes[4];
-  cmdBytes[0] = DAC_SDO_CMD;
-  cmdBytes[1] = 0;
-  cmdBytes[2] = 0;
-  cmdBytes[3] = DAC_SDO_EN;
+  int len = 4;
+  byte tx_buf[len];
+  byte rx_buf[len];
+
+  tx_buf[0] = DAC_SDO_CMD;
+  tx_buf[1] = 0;
+  tx_buf[2] = 0;
+  tx_buf[3] = DAC_SDO_EN;
   
   for (int i = 0; i < NUM_DEVICES; i++)
   {
-    digitalWrite(SYNC_PIN,LOW); 
-    delay(1);
-    SPI.beginTransaction(this->settingsA);
-    
-    SPI.transfer(cmdBytes[0]);
-    SPI.transfer(cmdBytes[1]);
-    SPI.transfer(cmdBytes[2]);
-    SPI.transfer(cmdBytes[3]);
-    
-    delay(1); //arbitrary delay to ensure data transfer is not interrupted
-    digitalWrite(SYNC_PIN,HIGH); 
-    SPI.endTransaction();
-    
+    transmit(tx_buf,rx_buf,len);    
     delay(1);
   }
-}
-
-int Dac::current_float_to_int(float f)
-{
-  float currentVal = f * MAX_DAC_CODE / MAX_CURRENT;
-  int DACint = (int)round(currentVal);
-  return DACint;
-}
-
-float Dac::current_int_to_float(int i)
-{
-  float currentFloat = ((float)i / (float)MAX_DAC_CODE) * MAX_CURRENT;
-  return currentFloat;
 }
 
 void Dac::set_all_current(float f)
 {
   int DACSetInt = current_float_to_int(f);
   
-  digitalWrite(SYNC_PIN,LOW);
-  SPI.beginTransaction(this->settingsA);
-
-  for (int i = 0; i < NUM_DEVICES; i++)
+  for (int dv = 0; dv < NUM_DEVICES; dv++)
   {
-    //Serial.print(i);Serial.println("th TRANSFER:");
-    send_write_buf(CHANNEL_ALL,DACSetInt,1);
+    store_dac_int(dv,CHANNEL_A,DACSetInt);
+    store_dac_int(dv,CHANNEL_B,DACSetInt);
+    store_dac_int(dv,CHANNEL_C,DACSetInt);
+    store_dac_int(dv,CHANNEL_D,DACSetInt);
+  };
+
+  int len = NUM_DEVICES*4;
+  byte tx_buf[len];
+  byte rx_buf[len];
+
+  for (int i = 0; i < len; i+=4)
+  {
+    tx_buf[i] = DAC_WRITE_BUF_UPDATE_ALL_CMD;
+    tx_buf[i+1] = DAC_CHANNEL_ALL | (DACSetInt >> 10);
+    tx_buf[i+2] = (DACSetInt >> 2) & 0xFF;
+    tx_buf[i+3] = (DACSetInt & 0xFF) << 6;
   }
   
-  digitalWrite(SYNC_PIN,HIGH); 
-  SPI.endTransaction();
+  transmit(tx_buf,rx_buf,len);
 }
 
-void Dac::set_device_current(int device, int channel, float f)
+void Dac::set_current(int device, int channel, float f)
 {
   if (channel < 0 || channel > 3)
   {
     return;
   }
-  Serial.print("device: ");Serial.println(device);
-  Serial.print("channel: ");Serial.println(channel);
-  Serial.print("setting: ");Serial.println(f);
+  
   int DACSetInt = current_float_to_int(f);
 
   store_dac_int(device,channel,DACSetInt);
 
-  update_all_current(channel);
+  int len = NUM_DEVICES*4;
+  byte tx_buf[len];
+  byte rx_buf[len];
+
+  device = NUM_DEVICES - 1;
+  for (int i = 0; i < len; i+=4)
+  {
+    DACSetInt = get_dac_int(device--,channel);
+    
+    tx_buf[i] = DAC_WRITE_BUF_UPDATE_ALL_CMD;
+    tx_buf[i+1] = (channel << 4) | (DACSetInt >> 10);
+    tx_buf[i+2] = (DACSetInt >> 2) & 0xFF;
+    tx_buf[i+3] = (DACSetInt & 0xFF) << 6;
+  }
+
+  transmit(tx_buf,rx_buf,len);
 }
 
 float Dac::read_device_current(int device, int channel)
@@ -191,40 +205,6 @@ float Dac::read_device_current(int device, int channel)
 
   return currentFloat;
 }
-
-void Dac::update_all_current(int ch)
-{
-  byte cmdBytes[4];
-  uint16_t dacInt = 0;
-  cmdBytes[0] = DAC_WRITE_BUF_UPDATE_ALL_CMD;
-
-  digitalWrite(SYNC_PIN,LOW);
-  //delay(10);
-  SPI.beginTransaction(this->settingsA);
-  
-  for (int dv = NUM_DEVICES-1; dv >= 0; dv--)
-  {
-    dacInt = get_dac_int(dv,ch);
-    //Serial.println(dacInt);
-    cmdBytes[1] = (ch << 4) | (dacInt >> 10);
-    cmdBytes[2] = (dacInt >> 2) & 0xFF;
-    cmdBytes[3] = (dacInt & 0xFF) << 6;
-
-    SPI.transfer(cmdBytes[0]);
-    //Serial.println(cmdBytes[0],BIN);
-    SPI.transfer(cmdBytes[1]);
-    //Serial.println(cmdBytes[1],BIN);
-    SPI.transfer(cmdBytes[2]);
-    //Serial.println(cmdBytes[2],BIN);
-    SPI.transfer(cmdBytes[3]);
-    //Serial.println(cmdBytes[3],BIN);
-  }
-    
-  //delay(10); //arbitrary delay to ensure data transfer is not interrupted
-  digitalWrite(SYNC_PIN,HIGH); 
-  SPI.endTransaction();
-}
-
 
 /* ######################################################
 *                         TEST fn
