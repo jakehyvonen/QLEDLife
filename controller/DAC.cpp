@@ -21,7 +21,7 @@ void Dac::begin()
   this->enable_SDO();
 };
 
-void Dac::transmit(byte *tx_buf, byte *rx_buf, int len)
+int Dac::transmit(byte *tx_buf, byte *rx_buf, int len)
 {
   digitalWrite(SYNC_PIN,LOW);
   SPI.beginTransaction(this->settingsA);
@@ -33,6 +33,8 @@ void Dac::transmit(byte *tx_buf, byte *rx_buf, int len)
 
   digitalWrite(SYNC_PIN,HIGH); 
   SPI.endTransaction();
+
+  return 0;
 }
 
 int Dac::current_float_to_int(float f)
@@ -107,7 +109,7 @@ void Dac::set_all_current(float f)
   transmit(tx_buf,rx_buf,len);
 }
 
-void Dac::set_current(int device, int channel, float f)
+int Dac::set_current(int device, int channel, float f)
 {
   if (channel < 0 || channel > 3)
   {
@@ -133,7 +135,9 @@ void Dac::set_current(int device, int channel, float f)
     tx_buf[i+3] = (DACSetInt & 0xFF) << 6;
   }
 
-  transmit(tx_buf,rx_buf,len);
+  int err = transmit(tx_buf,rx_buf,len);
+
+  return err;
 }
 
 float Dac::read_device_current(int device, int channel)

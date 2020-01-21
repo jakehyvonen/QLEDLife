@@ -108,16 +108,20 @@ void loop() {
     {
       String parseString = command.substring(5, 7); // get the channel number as a string
       int device = parseString.toInt();        // then convert it to an int
+      parseString = command.substring(7, 8);
+      int channel = channel_name_to_number(parseString.charAt(0));
       parseString = command;
-      parseString.remove(0, 7);
+      parseString.remove(0, 8);
       uint16_t id = parseString.toInt();
-      set_device_id(device, id);
+      set_device_id(device, channel, id);
     }
     else if (command.substring(0, 5) == "getID")
     {
       String parseString = command.substring(5, 7); // get the channel number as a string
       int device = parseString.toInt();        // then convert it to an int
-      uint16_t id = get_device_id(device);
+      parseString = command.substring(7, 8);
+      int channel = channel_name_to_number(parseString.charAt(0));
+      uint16_t id = get_device_id(device,channel);
       Serial.println(id);
     }
     else if (command.substring(0, 6) == "setAll")
@@ -135,7 +139,8 @@ void loop() {
       parseString = command.substring(9, 13); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
       //Serial.print("Setting device ");Serial.print(device);Serial.print(" to ");Serial.println(currentFloat);
-      DAC.set_current(device, ch, currentFloat);
+      int err = DAC.set_current(device, ch, currentFloat);
+      Serial.println(err);
     }
     else if (command.substring(0, 6) == "getLed")
     {
@@ -146,8 +151,8 @@ void loop() {
       //if (is_data_valid(dev))
       //{
       uint16_t v_led_int = get_led_meas(dv, ch);
-      Serial.println(dv);
-      Serial.println(channel_number_to_name(ch));
+      //Serial.println(dv);
+      //Serial.println(channel_number_to_name(ch));
       Serial.println(v_led_int);
       //}
     }
@@ -160,8 +165,8 @@ void loop() {
       //if (is_data_valid(dev))
       //{
       uint16_t v_pd_int = get_pd_meas(dv, ch);
-      Serial.println(dv);
-      Serial.println(channel_number_to_name(ch));
+      //Serial.println(dv);
+      //Serial.println(channel_number_to_name(ch));
       Serial.println(v_pd_int);
       //}
     }

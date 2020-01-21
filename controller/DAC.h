@@ -10,7 +10,7 @@ class Dac
     void begin();
     void enable_SDO();
     void set_all_current(float f);
-    void set_current(int device, int channel, float f);
+    int set_current(int device, int channel, float f);
     float read_device_current(int device, int channel);
     void test_write();
     void test_enable_SDO();
@@ -25,7 +25,7 @@ class Dac
     SPISettings settingsA;
     int current_float_to_int(float f);
     float current_int_to_float(int i);
-    void transmit(byte *tx_buf, byte *rx_buf, int len);
+    int transmit(byte *tx_buf, byte *rx_buf, int len);
     void send_nop(byte* buf);
 };
 

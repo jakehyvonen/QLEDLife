@@ -11,19 +11,19 @@ EEPROM organization:
     A[0]    = 0: LSB, 1: MSB    |   0: (LSB), 1: (MSB)
 */
 
-uint16_t get_device_id(int dv)
+uint16_t get_device_id(int dv, int ch)
 {
-  // 1 dv dv dv dv 0 0 0 0
-  int a = 0x100 + ((dv << 4) & 0xF0);
+  // 1 dv dv dv dv ch ch 0 0
+  int a = 0x100 + ((dv << 4) & 0xF0) + ((ch << 2) & 0x0C);
   uint16_t id = EEPROM[a];
   id |= (EEPROM[a+1] << 8);
   return id;
 }
 
-void set_device_id(int dv, uint16_t id)
+void set_device_id(int dv, int ch, uint16_t id)
 {
-  // 1 dv dv dv dv 0 0 0 0
-  int a = 0x100 + ((dv << 4) & 0xF0);
+  // 1 dv dv dv dv ch ch 0 0
+  int a = 0x100 + ((dv << 4) & 0xF0) + ((ch << 2) & 0x0C);
   EEPROM[a] = id & 0xFF;
   EEPROM[a+1] = (id >> 8) & 0xFF;
 }

@@ -101,7 +101,7 @@ class StatusPanel(tk.Frame):
             self, text="Stop", fg="red", command=self.stop)
         self.stop_button.grid(row=10,column=2,columnspan=2,sticky=tk.W+tk.E)
         
-        
+    
     def set_all_off(self):
         if ser.is_open:
             ser.write(b'setAll0.00\n')
@@ -118,7 +118,7 @@ class StatusPanel(tk.Frame):
             print("Not connected")
             
     def start(self):
-        global ser
+        #global ser
         if ser.is_open:
             ch = int(self.channel_entry.get())
             dv = ord(self.device_entry.get())-65
@@ -267,9 +267,9 @@ class PixelFrame(tk.Frame):
         global ser
         self.pixel_label.configure(fg='green')
         self.pixel.ser = ser
-        self.pixel.set_id(int(self.id_entry.get()))
-        self.pixel.set_current(float(self.current_entry.get()))
-        self.pixel.start()
+        id = int(self.id_entry.get())
+        current = float(self.current_entry.get())
+        self.pixel.start(id,current)
         
     def stop(self):
         self.pixel_label.configure(fg='red')
@@ -277,11 +277,12 @@ class PixelFrame(tk.Frame):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == '-t' or sys.argv[1] == '-e':
-        EMULATOR_MODE = True
-        ser = serial.serial_for_url('loop://')
-        em_thread = Emulator(ser)
-        em_thread.start()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '-t' or sys.argv[1] == '-e':
+            EMULATOR_MODE = True
+            ser = serial.serial_for_url('loop://')
+            em_thread = Emulator(ser)
+            em_thread.start()
     app = App()
     # ani = animation.FuncAnimation(f, animate, interval=1000)
     app.mainloop()
