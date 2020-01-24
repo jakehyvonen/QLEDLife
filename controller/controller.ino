@@ -3,6 +3,7 @@
 #include <WString.h>
 #include <Adafruit_ADS1015.h> //ADS1115 library
 #include "DAC.h"
+#include "ad5645r.h"
 #include "MUX.h"
 #include "MemoryOperations.h"
 #include "defines.h"
@@ -19,6 +20,7 @@ Adafruit_ADS1115 ADS1115(0x48);
 Mux MUX16CH(16, &MUX16CHSELS[0]);
 Mux MUX4CH(4, MUX4CHSELS);
 Dac DAC(MAX_DAC_CODE, MAX_CURRENT, NUM_DEVICES, DPIN8);
+AD5645R Dev0(0x1A);
 
 float VdevADCGainCF = (0.0001875) * (27.0 / 12.0); //arduino ADC (10 bit)*(120+150kohm)/(120 kohm)
 //float IphADCGainCF = 0.0001875 / 120000.0; //units are Amps
@@ -45,15 +47,27 @@ void setup() {
 
   Serial.begin(9600);
 
-  DAC.begin();
+  //DAC.begin();
+  
+  Wire.begin();
   delay(100);
   
-  ADS1115.setGain(GAIN_TWOTHIRDS);
-  ADS1115.begin();
+  //ADS1115.setGain(GAIN_TWOTHIRDS);
+  //ADS1115.begin();
 
-  DAC.set_all_current(0);
+  //DAC.set_all_current(0);
 
-  start_timer();
+  while(1)
+  {
+    delay(1000);
+    Wire.beginTransmission(0x1A);
+    Wire.write(0x18);
+    Wire.write(0x20);
+    Wire.write(0x00);
+    Wire.endTransmission();
+  }
+
+  //start_timer();
 
   interrupts();
 }
@@ -128,7 +142,7 @@ void loop() {
     {
       String parseString = command.substring(6, 10); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
-      DAC.set_all_current(currentFloat);
+      //DAC.set_all_current(currentFloat);
     }
     else if (command.substring(0, 6) == "setDev")
     {
@@ -139,8 +153,8 @@ void loop() {
       parseString = command.substring(9, 13); // get the I value as a string
       float currentFloat = parseString.toFloat();   // then convert it to an float
       //Serial.print("Setting device ");Serial.print(device);Serial.print(" to ");Serial.println(currentFloat);
-      int err = DAC.set_current(device, ch, currentFloat);
-      Serial.println(err);
+      //int err = DAC.set_current(device, ch, currentFloat);
+      //Serial.println(err);
     }
     else if (command.substring(0, 6) == "getLed")
     {
@@ -176,8 +190,8 @@ void loop() {
       int dv = parseString.toInt();
       parseString = command.substring(6, 7);        // get channel as int
       int ch = channel_name_to_number(parseString.charAt(0));
-      float current = DAC.read_device_current(dv,ch);
-      Serial.println(current);
+      //float current = DAC.read_device_current(dv,ch);
+      //Serial.println(current);
     }
     else if (command.substring(0, 4) == "stop")
     {
@@ -197,15 +211,15 @@ void loop() {
     }
     else if (command.substring(0, 6) == "_write")
     {
-      DAC.test_write();
+      //DAC.test_write();
     }
     else if (command.substring(0, 4) == "_sdo")
     {
-      DAC.test_enable_SDO();
+      //DAC.test_enable_SDO();
     }
     else if (command.substring(0, 4) == "_clr")
     {
-      DAC.test_clr();
+      //DAC.test_clr();
     }
     else if (command.substring(0,5) == "_read")
     {
@@ -214,7 +228,7 @@ void loop() {
       parseString = command.substring(7, 8);        // get channel as int
       int ch = channel_name_to_number(parseString.charAt(0));
       byte buf[4*NUM_DEVICES];
-      DAC.test_read_register(reg,ch,&buf[0]);
+      //DAC.test_read_register(reg,ch,&buf[0]);
     }
     else if (command.substring(0,8) == "_MEM_DAC")
     {
@@ -246,7 +260,7 @@ ISR(TIMER1_OVF_vect)
 ISR(TIMER2_OVF_vect)
 {
   TCNT2 = 0;
-  DAC.set_all_current(sweepValue);
+  //DAC.set_all_current(sweepValue);
   if (sweepUp)
   {
     if (sweepValue < 10.0)
@@ -354,6 +368,6 @@ void stop_sweep()
   TCNT2 = 0;
   TCCR2B &= ~((1 << CS12) + 1);    // 1024 prescaler
   TIMSK2 &= ~(1 << TOIE1);
-  DAC.set_all_current(0);
+  //DAC.set_all_current(0);
   interrupts();
 }
