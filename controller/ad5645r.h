@@ -7,13 +7,20 @@
 #define AD5645R_DAC_CHANNEL_D    (0x3)
 #define AD5645R_DAC_CHANNEL_ALL  (0x7)
 
-#define AD5645R_CMD_WRITE_UPDATE_N   (0x3 << 3) 
+#define AD5645R_CMD_WRITE_REG_N         (0x0 << 3)
+#define AD5645R_CMD_UPDATE_REG_N        (0x1 << 3)
+#define AD5645R_CMD_WRITE_UPDATE_ALL    (0x2 << 3)
+#define AD5645R_CMD_WRITE_UPDATE_N      (0x3 << 3)
+#define AD5645R_CMD_RESET               (0x5 << 3) 
 
 class AD5645R
 {
 public:
   AD5645R(uint8_t i2cAddress);
   void write_update_n(uint8_t ch, uint16_t DacInt);
+  void write_update_all(uint8_t ch, uint16_t DacInt);
+  void write_reg_n(uint8_t ch, uint16_t DacInt);
+  void update_reg_n(uint8_t ch, uint16_t DacInt);
 private:
   uint8_t m_i2cAddress;
 };
