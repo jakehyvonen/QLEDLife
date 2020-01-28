@@ -1,8 +1,7 @@
-#include <SPI.h>
 #include <Wire.h>
 #include <WString.h>
 #include <Adafruit_ADS1015.h> //ADS1115 library
-#include "DAC.h"
+#include "DAC.h"              //AD5645R
 #include "MUX.h"
 #include "MemoryOperations.h"
 #include "defines.h"
@@ -18,7 +17,7 @@ const int MUX4CHSELS[] = {DPIN6, DPIN7};
 Adafruit_ADS1115 ADS1115(0x48);
 Mux MUX16CH(16, &MUX16CHSELS[0]);
 Mux MUX4CH(4, MUX4CHSELS);
-Dac DAC(MAX_DAC_CODE, MAX_CURRENT, NUM_DEVICES, DPIN8);
+Dac DAC(MAX_DAC_CODE, MAX_CURRENT, NUM_DEVICES);
 
 float VdevADCGainCF = (0.0001875) * (27.0 / 12.0); //arduino ADC (10 bit)*(120+150kohm)/(120 kohm)
 //float IphADCGainCF = 0.0001875 / 120000.0; //units are Amps
@@ -34,6 +33,7 @@ bool timerFlag = 0;
 float sweepValue = 0;
 bool sweepUp = 1;
 bool sweeping = 0;
+byte sweepFlag = 0;
 
 /* #####################################################################
                    MAIN
@@ -51,9 +51,9 @@ void setup() {
   ADS1115.setGain(GAIN_TWOTHIRDS);
   ADS1115.begin();
 
-  DAC.set_all_current(0);
+  //DAC.set_all_current(0);
 
-  start_timer();
+  //start_timer();
 
   interrupts();
 }
@@ -80,21 +80,37 @@ void loop() {
       result = ADS1115.readADC_SingleEnded(1);    // read PD voltage
       //Serial.print(" PDV: ");Serial.println(result);
       store_pd_meas(devSel, chSel, result);
-      /*VdevFloat = VdevBit * VdevADCGainCF;
-        Serial.print(String(get_device_id(chSel)));
-        Serial.print(",");
-        Serial.print(get_device_name(devSel));
-        Serial.print(" PDV: ");
-        Serial.println(VdevFloat);
-        IphBit = ADS1115.readADC_SingleEnded(1);
-        IphFloat = IphBit*IphADCGainCF;
-        Serial.print(String(get_device_id(chSel)));
-        Serial.print(",");
-        Serial.print(get_device_name(devSel));
-        Serial.print(" LEDV: ");
-        Serial.println(String(IphBit));
-        Serial.println(IphFloat);*/
     }
+  }
+
+  if (sweepFlag)
+  {
+    DAC.set_all_current(sweepValue);
+    if (sweepUp)
+    {
+      if (sweepValue < 10.0)
+      {
+        sweepValue += 0.01;
+      }
+      else
+      {
+        sweepUp = 0;
+        sweepValue -= 0.01;
+      }
+    }
+    else
+    {
+      if (sweepValue > 0.0)
+      {
+        sweepValue -= 0.01;
+      }
+      else
+      {
+        sweepUp = 1;
+        sweepValue += 0.01;
+      }
+    }
+    sweepFlag = 0;
   }
 
   //Serial Input Section -- handles commands received from software
@@ -170,15 +186,6 @@ void loop() {
       Serial.println(v_pd_int);
       //}
     }
-    else if (command.substring(0,4) == "read")
-    {
-      String parseString = command.substring(4, 6); // get device as int
-      int dv = parseString.toInt();
-      parseString = command.substring(6, 7);        // get channel as int
-      int ch = channel_name_to_number(parseString.charAt(0));
-      float current = DAC.read_device_current(dv,ch);
-      Serial.println(current);
-    }
     else if (command.substring(0, 4) == "stop")
     {
       stop_timer();
@@ -194,27 +201,6 @@ void loop() {
     else if (command.substring(0, 5) == "sweep")
     {
       sweeping ? stop_sweep() : start_sweep();
-    }
-    else if (command.substring(0, 6) == "_write")
-    {
-      DAC.test_write();
-    }
-    else if (command.substring(0, 4) == "_sdo")
-    {
-      DAC.test_enable_SDO();
-    }
-    else if (command.substring(0, 4) == "_clr")
-    {
-      DAC.test_clr();
-    }
-    else if (command.substring(0,5) == "_read")
-    {
-      String parseString = command.substring(5, 7); // get register as string
-      int reg = parseString.toInt();
-      parseString = command.substring(7, 8);        // get channel as int
-      int ch = channel_name_to_number(parseString.charAt(0));
-      byte buf[4*NUM_DEVICES];
-      DAC.test_read_register(reg,ch,&buf[0]);
     }
     else if (command.substring(0,8) == "_MEM_DAC")
     {
@@ -246,32 +232,7 @@ ISR(TIMER1_OVF_vect)
 ISR(TIMER2_OVF_vect)
 {
   TCNT2 = 0;
-  DAC.set_all_current(sweepValue);
-  if (sweepUp)
-  {
-    if (sweepValue < 10.0)
-    {
-      sweepValue += 0.01;
-    }
-    else
-    {
-      sweepUp = 0;
-      sweepValue -= 0.01;
-    }
-  }
-  else
-  {
-    if (sweepValue > 0.0)
-    {
-      sweepValue -= 0.01;
-    }
-    else
-    {
-      sweepUp = 1;
-      sweepValue += 0.01;
-    }
-
-  }
+  sweepFlag = 1;
 }
 
 /* #####################################################################
@@ -335,8 +296,8 @@ void stop_timer()
 
 void start_sweep()
 {
-  noInterrupts();
   Serial.println("Starting sweep...");
+  noInterrupts();
   TCCR2A = 0;
   TCCR2B = 0;
   TCNT2 = 0;
@@ -354,6 +315,5 @@ void stop_sweep()
   TCNT2 = 0;
   TCCR2B &= ~((1 << CS12) + 1);    // 1024 prescaler
   TIMSK2 &= ~(1 << TOIE1);
-  DAC.set_all_current(0);
   interrupts();
 }
