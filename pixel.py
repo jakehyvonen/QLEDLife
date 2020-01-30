@@ -1,11 +1,9 @@
 import csv
 import numpy as np
-import serial
+import serial_wrapper
 import sys
 import time
 from threading import *
-
-ser_lock = Lock()
 
 # TODO:
 #   exit if serial breaks down?
@@ -51,58 +49,26 @@ class Pixel:
             self.running = False
             
     def test_loop(self):
-        global ser_lock
         print('%s Starting' % self.name)
         while(self.running):
             time.sleep(self.period)
-            vled, vpd = self.get_measurements
+            print('%s woke up' % self.name)
+            vled, vpd = self.get_measurements()
             self.store_measurement(vled,vpd)
-        print('%s Exiting' % self.name)
-        self.exit(self);
+        self.exit(self)
         
     def set_current(self,current):
         self.current = current
-        ser_lock.acquire()
-        print('%s aquired serial lock' % self.name)
-        self.ser.write(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, self.current))
-        print('%s SEND: setDev%02d%s%.02f' % (self.name, self.dv, self.ch, self.current))
-        while(self.ser.in_waiting):
-            pass
-        err = self.ser.readline().strip()
-        print('%s RECV: %s' % (self.name,err))
-        ser_lock.release()
-        print('%s has released lock' % self.name)
+        self.ser.transfer(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, self.current))
         
     def set_id(self,id):
         self.id = id
-        ser_lock.acquire()
-        print('%s aquired serial lock' % self.name)
-        self.ser.write(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
-        print('%s SEND: setId%02d%s%05d' % (self.name, self.dv, self.ch, self.id))
-        while(self.ser.in_waiting):
-            pass
-        err = self.ser.readline().strip()
-        print('%s RECV: %s' % (self.name,err))
-        ser_lock.release()
-        print('%s has released lock' % self.name)
+        self.ser.transfer(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
         
     def get_measurements(self):
-        ser_lock.acquire()
-        print('%s aquired serial lock' % self.name)
-        self.ser.write(b'getLed%02d%s\n' % (self.dv, self.ch))
-        print('%s SEND: getLed%02d%s' % (self.name, self.dv, self.ch))
-        while(self.ser.in_waiting):
-            pass
-        vled = self.ser.readline().strip()
-        print('%s RECV: %s' % (self.name,vled))
-        self.ser.write(b'getPd%02d%s\n' % (self.dv, self.ch))
-        print('%s SEND: getPd%02d%s' % (self.name, self.dv, self.ch))
-        while(self.ser.in_waiting):
-            pass
-        vpd = self.ser.readline().strip()
-        print('%s RECV: %s' % (self.name,vpd))
-        ser_lock.release()
-        print('%s has released lock' % self.name)
+        print('getting measurements')
+        vled = self.ser.transfer(b'getLed%02d%s\n' % (self.dv, self.ch))
+        vpd = self.ser.transfer(b'getPd%02d%s\n' % (self.dv, self.ch))
         return vled, vpd
         
     def store_measurement(self,vled,vpd):
@@ -111,3 +77,6 @@ class Pixel:
         with open(self.filename,'a') as fd:
             writer = csv.writer(fd)
             writer.writerow(row)
+            
+    def exit(self):
+        print('%s Exiting' % self.name)

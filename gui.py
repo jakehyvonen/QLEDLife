@@ -9,12 +9,11 @@ from matplotlib.figure import Figure
 import matplotlib.animation as animation
 
 import csv
-import serial_connection as sc
-import serial
 import sys
 import time
 import numpy as np
 
+from serial_wrapper import *
 from emulator import *
 from pixel import *
 from threading import *
@@ -22,10 +21,7 @@ from threading import *
 EMULATOR_MODE = False
 em_thread = None
 
-ser = serial.Serial()
-ser.baudrate = 9600
-ser.port = None
-ser.timeout = 1
+ser = SerialWrapper()
 
 #f = Figure(figsize=(5,5),dpi=100)
 #a = f.add_subplot(111)
@@ -140,18 +136,9 @@ class StatusPanel(tk.Frame):
             return
         else:
             print('Attempting to connect...')
-            result = sc.serial_ports()
-            print(result)
-            port = sc.ping_controller(result)
-            if port == -1:
-                print('Connection failed')
-                self.connection_status_label.config(fg="red",text="Not connected. (attempt failed)")
-                return -1    
-            else:
-                ser.port = port
-                ser.open()
+            ser.open()
         if ser.is_open:
-            print('Connected at ' + port)
+            print('Connected successfully')
             self.connection_status_label.config(fg="green",text="Connected")
             return 0
         else:

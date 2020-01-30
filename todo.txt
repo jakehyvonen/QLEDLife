@@ -5,3 +5,7 @@ TODO  1 - definite race conditions exist between threads sharing serial port. ne
 TODO  2 - selectable file destination?
 TODO  3 - Device parent class for updating multiple pixels at once?
 DONE  4 - closing gui can leave threads hanging. find clean up function?
+DONE  5 - serial wrapper
+		-- locking
+		-- console logging
+TODO  6 - current sweep
