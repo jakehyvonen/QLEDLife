@@ -36,8 +36,8 @@ class Pixel:
             # print('PixelTest Error: Cannot begin test. Bad device')
         else:
             self.running = True
-            self.set_id(id)
-            self.set_current(current)
+            self.id = id
+            self.current = current
             self.start_time = time.time()
             self.filename = '%s-%s-%05d.csv' % (time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),self.name,self.id)
             self.thread = Thread(target=self.test_loop)
@@ -50,23 +50,15 @@ class Pixel:
             
     def test_loop(self):
         print('%s Starting' % self.name)
+        self.ser.transfer(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
+        self.ser.transfer(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, self.current))
         while(self.running):
             time.sleep(self.period)
-            print('%s woke up' % self.name)
             vled, vpd = self.get_measurements()
             self.store_measurement(vled,vpd)
-        self.exit(self)
-        
-    def set_current(self,current):
-        self.current = current
-        self.ser.transfer(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, self.current))
-        
-    def set_id(self,id):
-        self.id = id
-        self.ser.transfer(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
+        self.exit()
         
     def get_measurements(self):
-        print('getting measurements')
         vled = self.ser.transfer(b'getLed%02d%s\n' % (self.dv, self.ch))
         vpd = self.ser.transfer(b'getPd%02d%s\n' % (self.dv, self.ch))
         return vled, vpd
