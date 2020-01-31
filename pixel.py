@@ -23,7 +23,7 @@ class Pixel:
         self.filename = None
         self.thread = None
     
-    def start(self,id,current):
+    def start_test(self,id,current):
         if (self.running):
             print('Pixel Error: Already running')
             return -1
@@ -36,27 +36,34 @@ class Pixel:
             # print('PixelTest Error: Cannot begin test. Bad device')
         else:
             self.running = True
-            self.id = id
-            self.current = current
             self.start_time = time.time()
             self.filename = '%s-%s-%05d.csv' % (time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),self.name,self.id)
-            self.thread = Thread(target=self.test_loop)
+            self.thread = Thread(target=self.test_loop,args=[id,current])
             self.thread.name = self.name
             self.thread.start()
             
-    def stop(self):
-        if self.running:
-            self.running = False
-            
-    def test_loop(self):
+    def test_loop(self,id,current):
         print('%s Starting' % self.name)
-        self.ser.transfer(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
-        self.ser.transfer(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, self.current))
+        self.set_id(id)
+        self.set_current(current)
         while(self.running):
             time.sleep(self.period)
             vled, vpd = self.get_measurements()
             self.store_measurement(vled,vpd)
         self.exit()
+            
+    def stop(self):
+        if self.running:
+            self.running = False
+            
+    def set_current(self,current):
+        self.ser.transfer(b'setDev%02d%s%.02f\n' % (self.dv, self.ch, current))
+        self.current = current
+            
+    def set_id(self,id):
+        self.ser.transfer(b'setId%02d%s%05d\n' % (self.dv, self.ch, self.id))
+        self.id = id
+    
         
     def get_measurements(self):
         vled = self.ser.transfer(b'getLed%02d%s\n' % (self.dv, self.ch))
@@ -65,10 +72,41 @@ class Pixel:
         
     def store_measurement(self,vled,vpd):
         elapsed_time = time.time() - self.start_time
-        row = [elapsed_time,str(vled),str(vpd)]
+        row = [elapsed_time,str(vled),str(vpd),str(self.current)]
         with open(self.filename,'a') as fd:
             writer = csv.writer(fd)
             writer.writerow(row)
             
     def exit(self):
         print('%s Exiting' % self.name)
+        self.running = False
+        
+    def start_sweep(self,id,max,res):
+        if (self.running):
+            print('Pixel Error: Already running')
+            return -1
+        #elif (self.id == -1):
+            # print('Pixel Error: Cannot begin test. Bad ID')
+            # return -1
+        # elif (self.ch < 0 or self.ch > 15):
+            # print('Pixel Error: Cannot begin test. Bad channel')
+        # elif (self.dv == -1):
+            # print('PixelTest Error: Cannot begin test. Bad device')
+        else:
+            self.running = True
+            self.start_time = time.time()
+            self.filename = '%s-%s-%05d-SWEEP.csv' % (time.strftime('%Y-%m-%d-%H-%M-%S',time.localtime()),self.name,self.id)
+            self.thread = Thread(target=self.sweep_loop,args=[max,res])
+            self.thread.name = self.name
+            self.thread.start()
+            
+    def sweep_loop(self,max,res):
+        currents = np.arange(0,max,res)
+        for current in currents:
+            self.set_current(current)
+            vled, vpd = self.get_measurements()
+            self.store_measurement(vled,vpd)
+        self.exit()
+            
+            
+        

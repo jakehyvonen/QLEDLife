@@ -235,7 +235,7 @@ class PixelFrame(tk.Frame):
         self.id_entry_label.grid(row=0,column=0,sticky=tk.E)
         
         self.id_entry = tk.Entry(
-            self, width=6)
+            self,width=6)
         self.id_entry.grid(row=0,column=1)
         
         self.current_entry_label = tk.Label(
@@ -243,24 +243,55 @@ class PixelFrame(tk.Frame):
         self.current_entry_label.grid(row=1,column=0)
         
         self.current_entry = tk.Entry(
-            self, width=6)
+            self,width=6)
         self.current_entry.grid(row=1,column=1)
+        
+        self.max_sweep_label = tk.Label(
+            self,text='Max (mA)')
+        self.max_sweep_label.grid(row=0,column=3,sticky=tk.S)
+        
+        self.max_sweep_entry = tk.Entry(
+            self,width=6)
+        self.max_sweep_entry.grid(row=1,column=3)
+        self.max_sweep_entry.insert(0,'1.00')
+        
+        self.delta_sweep_label = tk.Label(
+            self,text=(u"\u0394"+' (mA)'))
+        self.delta_sweep_label.grid(row=0,column=4,sticky=tk.S)
+        
+        self.delta_sweep_entry = tk.Entry(
+            self,width=6)
+        self.delta_sweep_entry.grid(row=1,column=4)
+        self.delta_sweep_entry.insert(0,'0.01')
+        
+        self.run_sweep_button = tk.Button(
+            self,text='Run Sweep', command=self.run_sweep)
+        self.run_sweep_button.grid(row=1,column=5)
+        
+        self.grid_columnconfigure(2,minsize=10)
         
         # self.time_running_label = tk.Label(
             # self,text='Time: ')
         # self.time_running_label.grid(row=1,column=2)
         
     def start(self):
-        global ser
+        #global ser
         self.pixel_label.configure(fg='green')
         self.pixel.ser = ser
         id = int(self.id_entry.get())
         current = float(self.current_entry.get())
-        self.pixel.start(id,current)
+        self.pixel.start_test(id,current)
         
     def stop(self):
         self.pixel_label.configure(fg='red')
         self.pixel.stop()
+        
+    def run_sweep(self):
+        self.pixel.ser = ser
+        id = int(self.id_entry.get())
+        max = float(self.max_sweep_entry.get())
+        delta = float(self.delta_sweep_entry.get())
+        self.pixel.start_sweep(id,max,delta)
 
 
 if __name__ == '__main__':
