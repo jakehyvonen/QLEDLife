@@ -23,11 +23,13 @@ class Dac
     Dac(int maxCode, float maxCurrent, int numDevices);
     void begin();
     int set_all_current(float f);
+    int set_all_voltage(float f);
     int set_current(int device, int channel, float f);
 
   private:
     const int m_maxCode = ((1 << 14) - 1);   // 14-bits
     const float m_maxCurrent = 10.0;
+    const float m_maxVoltage = 5.0;
     const int m_numDevices = 1;
     const uint8_t m_devices[9] = {
       0x10,0x12,0x13,
@@ -35,7 +37,9 @@ class Dac
       0x1C,0x1E,0x1F
     };
     int current_float_to_int(float f);
+    int voltage_float_to_int(float f);
     float current_int_to_float(int i);
+    float voltage_int_to_float(int i);
 };
 
 #endif

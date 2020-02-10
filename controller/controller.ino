@@ -143,8 +143,13 @@ void loop() {
     else if (command.substring(0, 6) == "setAll")
     {
       String parseString = command.substring(6, 10); // get the I value as a string
-      float currentFloat = parseString.toFloat();   // then convert it to an float
+      float currentFloat = parseString.toFloat();   // then convert it to a float
       DAC.set_all_current(currentFloat);
+    }
+    else if (command.substring(0,7) == "setVAll")
+    {
+      String parseString = command.substring(6, 10); // get the V value as a string
+      float voltageFloat = parseString.toFloat();   // then convert it to a float
     }
     else if (command.substring(0, 6) == "setDev")
     {
@@ -185,6 +190,11 @@ void loop() {
       //Serial.println(channel_number_to_name(ch));
       Serial.println(v_pd_int);
       //}
+    }
+     else if (command.substring(0,7) == "getVAll")
+    {
+      String parseString = command.substring(6, 10); // get the V value as a string
+      float voltageFloat = parseString.toFloat();   // then convert it to a float
     }
     else if (command.substring(0, 4) == "stop")
     {

@@ -9,9 +9,9 @@ and calculate linear coefficient (A/V)
 import csv
 import os
 from pathlib import Path
-#import numpy
+import numpy
 import pandas as pd
-#from sklearn import datasets, linear_model
+from sklearn import datasets, linear_model
 defaultDir = os.path.expanduser('~/Documents/Lifetime_System/HCP_Testing/')
 masterListName = defaultDir + 'Coeffs_Master_List.csv'
 #defaultName = 'Default.csv'

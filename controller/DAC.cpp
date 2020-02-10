@@ -4,7 +4,7 @@
 #include "defines.h"
 #include "MemoryOperations.h"
 
-Dac::Dac(int maxCode, float maxCurrent, int numDevices) : m_maxCode(maxCode), m_maxCurrent(maxCurrent), m_numDevices(numDevices) {};
+Dac::Dac(int maxCode, float maxCurrent, float maxVoltage, int numDevices) : m_maxCode(maxCode), m_maxCurrent(maxCurrent), m_maxVoltage(maxVoltage), m_numDevices(numDevices) {};
 
 static void i2cwrite(uint8_t i2cAddress, uint8_t command, uint16_t data)
 {
@@ -26,19 +26,45 @@ int Dac::current_float_to_int(float f)
   int DACint = (int)round(currentVal);
   return DACint;
 }
-
+int Dac::voltage_float_to_int(float f)
+{
+  float voltageVal = f * m_maxCode / m_maxVoltage;
+  int DACint = (int)round(voltageVal);
+  return DACint;
+}
 float Dac::current_int_to_float(int i)
 {
   float currentFloat = ((float)i / (float)m_maxCode) * m_maxCurrent;
   return currentFloat;
 }
-
+float Dac::voltage_int_to_float(int i)
+{
+  float voltageFloat = ((float)i / (float)m_maxCode) * m_maxVoltage;
+  return voltageFloat;
+}
 int Dac::set_all_current(float f)
 {
   if (f > m_maxCurrent)
     return -1;
     
   int DacSetInt = current_float_to_int(f);
+
+  if (DacSetInt > m_maxCode)
+    return -1;
+
+  //TODO - error check here
+  uint8_t commandByte = AD5645R_CMD_WRITE_UPDATE_N | AD5645R_DAC_CHANNEL_ALL;
+  i2cwrite(AD5645R_BROADCAST_ADDR,commandByte,DacSetInt);
+
+  return 0;
+}
+
+int Dac::set_all_voltage(float f)
+{
+  if (f > m_maxVoltage)
+    return -1;
+    
+  int DacSetInt = voltage_float_to_int(f);
 
   if (DacSetInt > m_maxCode)
     return -1;
