@@ -12,7 +12,7 @@ class IVSweepSpec:
 
 
 defaultSpec = IVSweepSpec(dec('0.1'),dec('0.77'),dec('5.01'))
-HCPNumber = '001'
+HCPNumber = '028'
 HCPName = 'HCP'+str(HCPNumber)
 def RunIVSweep(sweepSpec):
     KE2010.Initialize()
