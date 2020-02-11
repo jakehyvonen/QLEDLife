@@ -20,7 +20,7 @@
 class Dac
 {
   public:
-    Dac(int maxCode, float maxCurrent, int numDevices);
+    Dac(int maxCode, float maxCurrent, float maxVoltage, int numDevices);
     void begin();
     int set_all_current(float f);
     int set_all_voltage(float f);

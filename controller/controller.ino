@@ -5,11 +5,13 @@
 #include "MUX.h"
 #include "MemoryOperations.h"
 #include "defines.h"
+#include <EEPROM.h>
 
 #define NUM_DEVICES 2
 #define MSG_METHOD_SUCCESS 0
 #define MAX_DAC_CODE MAX14BIT
 #define MAX_CURRENT MAX10MA
+#define MAX_VOLTAGE MAX5V
 
 const int MUX16CHSELS[] = {DPIN2, DPIN3, DPIN4, DPIN5};
 const int MUX4CHSELS[] = {DPIN6, DPIN7};
@@ -17,7 +19,7 @@ const int MUX4CHSELS[] = {DPIN6, DPIN7};
 Adafruit_ADS1115 ADS1115(0x48);
 Mux MUX16CH(16, &MUX16CHSELS[0]);
 Mux MUX4CH(4, MUX4CHSELS);
-Dac DAC(MAX_DAC_CODE, MAX_CURRENT, NUM_DEVICES);
+Dac DAC(MAX_DAC_CODE, MAX_CURRENT, MAX_VOLTAGE, NUM_DEVICES);
 
 float VdevADCGainCF = (0.0001875) * (27.0 / 12.0); //arduino ADC (10 bit)*(120+150kohm)/(120 kohm)
 //float IphADCGainCF = 0.0001875 / 120000.0; //units are Amps
