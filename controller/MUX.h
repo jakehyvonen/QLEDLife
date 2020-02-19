@@ -10,7 +10,7 @@ class Mux
   void print_control_pins();
   
   private:
-  const int nCh;
+  int nCh;
   int nPins;
   int controlPin[4];
   int channel;

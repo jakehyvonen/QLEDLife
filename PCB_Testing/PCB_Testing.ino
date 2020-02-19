@@ -16,9 +16,10 @@
 #define m_maxCode 16383
 
 Adafruit_ADS1115 ADS1115(0x48);
+
 float startVolt = 0.011;
-float stepSize = 0.33; //volts
-float stopVolt = 4.94;
+float stepSize = 0.033; //volts
+float stopVolt = 4.44;
 float presentV;
 
 void setup(){
@@ -30,8 +31,8 @@ void setup(){
   interrupts();
 }
 void loop(){  
-  Serial.print("presentV: ");
-  Serial.println(presentV);
+  //Serial.print("presentV: ");
+  //Serial.println(presentV);
   set_all_voltage(presentV);
   int result;
   result = ADS1115.readADC_SingleEnded(0);    // read LED voltage

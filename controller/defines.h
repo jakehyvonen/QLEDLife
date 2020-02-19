@@ -13,6 +13,7 @@
 #define DPIN0 0
 
 #define MAX10MA 10.0f
+#define MAX5V 5.0f
 
 #define MAX12BIT 4095
 #define MAX14BIT 16383
