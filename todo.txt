@@ -8,4 +8,4 @@ DONE  4 - closing gui can leave threads hanging. find clean up function?
 DONE  5 - serial wrapper
 		-- locking
 		-- console logging
-TODO  6 - current sweep
+DONE  6 - current sweep

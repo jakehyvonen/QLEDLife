@@ -1,6 +1,7 @@
 import Tkinter as tk
 import ttk
 import tkMessageBox
+import tkFileDialog
 
 import matplotlib
 matplotlib.use("TkAgg")
@@ -97,6 +98,10 @@ class StatusPanel(tk.Frame):
             self, text="Stop", fg="red", command=self.stop)
         self.stop_button.grid(row=10,column=2,columnspan=2,sticky=tk.W+tk.E)
         
+        self.destination_button = tk.Button(
+            self, text="Set Destination", command=self.set_destination)
+        self.destination_button.grid(row=3,column=1)
+        
     
     def set_all_off(self):
         if ser.is_open:
@@ -145,6 +150,10 @@ class StatusPanel(tk.Frame):
             print('Connection failed')
             self.connection_status_label.config(fg="red",text="Not connected. (attempt failed)")
             return -1
+            
+    def set_destination(self):
+        tkFileDialog.askdirectory()
+        
                 
 class ControlPanel(ttk.Notebook):
     def __init__(self,parent,controller):
@@ -158,13 +167,6 @@ class ControlPanel(ttk.Notebook):
         tab6 = DeviceFrame(self,6)
         tab7 = DeviceFrame(self,7)
         tab8 = DeviceFrame(self,8)
-        tab9 = DeviceFrame(self,9)
-        tab10 = DeviceFrame(self,10)
-        tab11 = DeviceFrame(self,11)
-        tab12 = DeviceFrame(self,12)
-        tab13 = DeviceFrame(self,13)
-        tab14 = DeviceFrame(self,14)
-        tab15 = DeviceFrame(self,15)
         self.add(tab0, text = "Dev 0")
         self.add(tab1, text = "Dev 1")
         self.add(tab2, text = "Dev 2")
@@ -173,14 +175,7 @@ class ControlPanel(ttk.Notebook):
         self.add(tab5, text = "Dev 5") 
         self.add(tab6, text = "Dev 6")
         self.add(tab7, text = "Dev 7")
-        self.add(tab8, text = "Dev 8")  
-        self.add(tab9, text = "Dev 9")
-        self.add(tab10, text = "Dev 10")
-        self.add(tab11, text = "Dev 11")
-        self.add(tab12, text = "Dev 12")
-        self.add(tab13, text = "Dev 13") 
-        self.add(tab14, text = "Dev 14")
-        self.add(tab15, text = "Dev 15")
+        self.add(tab8, text = "Dev 8")
 
 class DeviceFrame(tk.Frame):
     def __init__(self,parent,device):
