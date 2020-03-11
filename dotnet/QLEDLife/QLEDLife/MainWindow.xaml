@@ -1,0 +1,207 @@
+﻿<Window x:Class="QLEDLife.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QLEDLife"
+        xmlns:oxy="http://oxyplot.codeplex.com"
+        mc:Ignorable="d"
+        Title="MainWindow" Width="1050" SizeToContent="Height">
+    <Window.DataContext>
+        <local:VMContainer />
+    </Window.DataContext>
+    <Window.Resources>
+        <DataTemplate x:Key="TileViewTemplate">
+
+            <Canvas HorizontalAlignment="Center" VerticalAlignment="Center" Height="100" Width="100" Background="{Binding BackgroundColor}" DataContext="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ContentControl}}}">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBox Text="{Binding ChannelName}"></TextBox>
+                    <DockPanel>
+                        <StackPanel>
+                            <TextBox Text="{Binding InitialLuminanceReading}"></TextBox>
+                            <TextBox Text="{Binding LuminanceFraction, StringFormat={}{0:#,#0.000}}"></TextBox>
+                            <TextBox Text="{Binding LastVoltReading}"></TextBox>
+                            <TextBox Text="{Binding ElapsedHours, StringFormat={}{0:#,#0.00}}"></TextBox>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock>
+                                (cd/m<Run BaselineAlignment="Superscript" FontSize="6pt">2</Run>)
+                            </TextBlock>
+                            <TextBlock>
+                                (a.u.)
+                            </TextBlock>
+                            <TextBlock>
+                                (V)
+                            </TextBlock>
+                            <TextBlock>
+                                (hrs)
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+
+                </StackPanel>
+            </Canvas>
+
+        </DataTemplate>
+        <DataTemplate x:Key="LifetimeChannelTemplate">
+
+            <DockPanel DataContext="{Binding DataContext, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}}">
+                <StackPanel DockPanel.Dock="Left">
+                    <!-- This first grid contains all initial set variables -->
+                    <Grid Margin="2">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Label Grid.Column="0" Grid.Row="0" Content="Set I (mA):" FontWeight="Bold"/>
+                        <TextBox Grid.Column="1" Width="30" Height="20" Grid.Row="0" IsEnabled="{Binding ChannelIsNOTActive}" Text="{Binding SetCurrent, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#,#0.00}}" 
+                         FontWeight="Bold"/>
+                        <Label Grid.Column="0" Grid.Row="1" Content="Alpha:" />
+                        <TextBox Grid.Column="1" Grid.Row="1" Width="30" Height="20" IsEnabled="{Binding ChannelIsNOTActive}" Text="{Binding Alpha, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:##0.00}}" />
+                        <Label Grid.Column="0" Grid.Row="2" Content="EQECF:" />
+                        <TextBox Grid.Column="1" Grid.Row="2" Width="30" Height="20" IsEnabled="{Binding ChannelIsNOTActive}"  Text="{Binding EQECF, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#,#0.00}}"/>
+                        <Label Grid.Column="2" Grid.Row="0" Content="Initial Data Interval(s):" />
+                        <TextBox Grid.Column="3" Width="30" Height="20" Grid.Row="0" IsEnabled="{Binding ChannelIsNOTActive}" Text="{Binding ShortTermSpan, UpdateSourceTrigger=PropertyChanged}" />
+                        <Label Grid.Column="2" Grid.Row="1" Content="which lasts for(s):" />
+                        <TextBox Grid.Column="3" Grid.Row="1" Width="30" Height="20" IsEnabled="{Binding ChannelIsNOTActive}" Text="{Binding SpanSwitchTime, UpdateSourceTrigger=PropertyChanged}" />
+                        <Label Grid.Column="2" Grid.Row="2" Content="then, Data Interval is(s):" />
+                        <TextBox Grid.Column="3" Grid.Row="2" Width="30" Height="20" IsEnabled="{Binding ChannelIsNOTActive}" Text="{Binding LongTermSpan, UpdateSourceTrigger=PropertyChanged}" />
+                        <ComboBox Grid.Column="4" Grid.Row="0" Width="170" Height="20" IsEnabled="{Binding ChannelIsNOTActive}" SelectedIndex="{Binding HighRangeInt}" >
+                            <ComboBoxItem>Low Range (0.00-1.00 mA)</ComboBoxItem>
+                            <ComboBoxItem>High Range (0.0-10.0 mA)</ComboBoxItem>
+                        </ComboBox>
+                        <TextBox Grid.Column="4" Grid.Row="1" Grid.RowSpan="2" Width="170" Height="50" IsEnabled="False" Name="txtEditor" Text="{Binding ChannelSavePath, UpdateSourceTrigger=PropertyChanged}" 
+                         TextWrapping="Wrap" />
+                        <Button Grid.Column="5" Grid.Row="0" Command="{Binding StartChannel}">Start</Button>
+                        <Button Grid.Column="5" Grid.Row="1" Command="{Binding StopChannel}">Interrupt</Button>
+                        <Button Grid.Column="5" Grid.Row="2" Command="{Binding UpdateChannelSavePath}">Save Filepath</Button>
+
+                    </Grid>
+                    <!-- This second grid contains all logically updated variables -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Column="1" Grid.Row="0" Content="Last Luminance Reading:" />
+                        <TextBox Grid.Column="2" Width="40" Height="20" Grid.Row="0" IsEnabled="{Binding ChannelIsActive}" Text="{Binding LastLuminanceReading, UpdateSourceTrigger=PropertyChanged}"  />
+                        <Label Grid.Column="1" Grid.Row="1" Content="Initial Luminance Reading:" />
+                        <TextBox Grid.Column="2" Grid.Row="1" Width="40" Height="20" IsEnabled="{Binding ChannelIsActive}" Text="{Binding InitialLuminanceReading, UpdateSourceTrigger=PropertyChanged}" />
+                        <Label Grid.Column="1" Grid.Row="2" Content="Luminance Fraction:" />
+                        <TextBox Grid.Column="2" Grid.Row="2" Width="40" Height="20" IsEnabled="{Binding ChannelIsActive}"  Text="{Binding LuminanceFraction, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#,#0.00}}"/>
+                        <Label Grid.Column="3" Grid.Row="0" Content="Last C.E. Reading(cd/A):" />
+                        <TextBox Grid.Column="4" Width="30" Height="20" Grid.Row="0" IsEnabled="{Binding ChannelIsActive}" Text="{Binding LastCECalc, UpdateSourceTrigger=PropertyChanged}"  />
+                        <Label Grid.Column="3" Grid.Row="1" Content="Last P.E. Reading(lm/W):" />
+                        <TextBox Grid.Column="4" Grid.Row="1" Width="30" Height="20" IsEnabled="{Binding ChannelIsActive}" Text="{Binding LastPECalc, UpdateSourceTrigger=PropertyChanged}" />
+                        <Label Grid.Column="3" Grid.Row="2" Content="Last EQE Reading(%):" />
+                        <TextBox Grid.Column="4 " Grid.Row="2" Width="30" Height="20" IsEnabled="{Binding ChannelIsActive}"  Text="{Binding LastEQECalc, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Label Grid.Column="5" Grid.Row="0" Content="Hours on:" />
+                        <TextBox Grid.Column="6" Grid.Row="0" Width="30" Height="20" IsEnabled="{Binding ChannelIsActive}" Text="{Binding ElapsedHours, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#,#0.00}}" />
+                        <Label Grid.Column="5" Grid.Row="1" Content="Voltage:" />
+                        <TextBox Grid.Column="6" Grid.Row="1" Width="30" Height="20" IsEnabled="{Binding ChannelIsActive}"  Text="{Binding LastVoltReading, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:#,#0.00}}"/>
+                    </Grid>
+                </StackPanel>
+                
+                <oxy:Plot Model="{Binding PlotModel}">
+
+                </oxy:Plot>
+            </DockPanel>
+        </DataTemplate>
+    </Window.Resources>
+    <ScrollViewer>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid HorizontalAlignment="Center" Grid.Row="0" Margin="10">
+                <Grid.RowDefinitions>
+
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ContentControl Grid.Row="0" Grid.Column="0" DataContext="{Binding LCVMArray[0]}" ContentTemplate="{StaticResource TileViewTemplate}" Height="100" Width="100"></ContentControl>
+                <ContentControl Grid.Row="0" Grid.Column="1" DataContext="{Binding LCVMArray[1]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="0" Grid.Column="2" DataContext="{Binding LCVMArray[2]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="0" Grid.Column="3" DataContext="{Binding LCVMArray[3]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="1" Grid.Column="0" DataContext="{Binding LCVMArray[4]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="1" Grid.Column="1" DataContext="{Binding LCVMArray[5]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="1" Grid.Column="2" DataContext="{Binding LCVMArray[6]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="1" Grid.Column="3" DataContext="{Binding LCVMArray[7]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="2" Grid.Column="0" DataContext="{Binding LCVMArray[8]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="2" Grid.Column="1" DataContext="{Binding LCVMArray[9]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="2" Grid.Column="2" DataContext="{Binding LCVMArray[10]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="2" Grid.Column="3" DataContext="{Binding LCVMArray[11]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="3" Grid.Column="0" DataContext="{Binding LCVMArray[12]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="3" Grid.Column="1" DataContext="{Binding LCVMArray[13]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="3" Grid.Column="2" DataContext="{Binding LCVMArray[14]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+                <ContentControl Grid.Row="3" Grid.Column="3" DataContext="{Binding LCVMArray[15]}" ContentTemplate="{StaticResource TileViewTemplate}" Background="LightGray" Height="110" Width="110"></ContentControl>
+            </Grid>
+            <Expander Grid.Row="1" DataContext="{Binding LCVMArray[0]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="2" DataContext="{Binding LCVMArray[1]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="3" DataContext="{Binding LCVMArray[2]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="4" DataContext="{Binding LCVMArray[3]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="5" DataContext="{Binding LCVMArray[4]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="6" DataContext="{Binding LCVMArray[5]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="7" DataContext="{Binding LCVMArray[6]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="8" DataContext="{Binding LCVMArray[7]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="9" DataContext="{Binding LCVMArray[8]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="10" DataContext="{Binding LCVMArray[9]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="11" DataContext="{Binding LCVMArray[10]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="12" DataContext="{Binding LCVMArray[11]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="13" DataContext="{Binding LCVMArray[12]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="14" DataContext="{Binding LCVMArray[13]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="15" DataContext="{Binding LCVMArray[14]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+            <Expander Grid.Row="16" DataContext="{Binding LCVMArray[15]}" Header="{Binding ChannelName}" ContentTemplate="{StaticResource LifetimeChannelTemplate}"></Expander>
+
+        </Grid>
+    </ScrollViewer>
+</Window>
